@@ -1,0 +1,40 @@
+server:
+  port: 8000
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: ecosystem-backend
+  
+  # 数据库配置 (MySQL)
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecoschema?useSSL=false&serverTimezone=UTC
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root  # 请修改为你的 MySQL 用户名
+    password: allinton  # 请修改为你的 MySQL 密码
+  
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: update  # 自动创建/更新表结构
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        hbm2ddl:
+          auto: update
+
+# JWT 配置
+jwt:
+  secret: ecosystem-secret-key-change-in-production-environment-minimum-256-bits
+  expiration: 86400000 # 24小时 (毫秒)
+
+# CORS 配置
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:8080
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+
