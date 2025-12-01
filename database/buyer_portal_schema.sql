@@ -49,6 +49,8 @@ CREATE TABLE products (
     featured TINYINT(1) DEFAULT 0 COMMENT '是否特色产品: 1-是, 0-否',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    historical_low_price DECIMAL(10,2) DEFAULT NULL COMMENT '历史最低价',
+    last_transaction_price DECIMAL(10,2) DEFAULT NULL COMMENT '最后交易价格',
     
     -- 外键约束
     CONSTRAINT fk_product_seller FOREIGN KEY (seller_id) 
@@ -202,4 +204,104 @@ INSERT INTO products (id, name, description, price, currency, image, seller_id, 
 -- SHOW TABLES;
 -- DESCRIBE products;
 -- DESCRIBE orders;
+
+INSERT INTO sellers (id, name, verified, rating, created_at)
+VALUES
+    ('seller_004', 'Global Build Materials Co.', 1, 4.6, NOW()),
+    ('seller_005', 'ProEngineering Supplies', 1, 4.7, NOW()),
+    ('seller_006', 'United Steel Group', 1, 4.4, NOW()),
+    ('seller_007', 'HeavyWorks Machinery', 1, 4.8, NOW()),
+    ('seller_008', 'Prime Cement & Tools', 0, 4.2, NOW());
+
+INSERT INTO products (
+    id, name, description, price, currency, image, seller_id, category, stock,
+    rating, reviews_count, pe_certified, certificate_number, certified_by,
+    featured, specifications, tags, created_at
+)
+VALUES
+    ('prod_004', 'Heavy Duty Crane', 'Industrial crane suitable for large construction sites', 12999.00, 'USD',
+     'https://example.com/crane.jpg', 'seller_007', 'equipment', 12, 4.8, 48, 1, 'CERT-004', 'PE-789', 1,
+     JSON_OBJECT('power', '450kW', 'capacity', '20T', 'height', '40m'),
+     JSON_ARRAY('heavy', 'crane', 'industrial'),
+     NOW()),
+
+    ('prod_005', 'Premium Cement (50kg)', 'High-strength cement for structural engineering', 19.99, 'USD',
+     'https://example.com/cement.jpg', 'seller_008', 'cement', 500, 4.3, 112, 1, 'CERT-005', 'PE-321', 0,
+     JSON_OBJECT('weight', '50kg', 'grade', '42.5R'),
+     JSON_ARRAY('cement', 'construction'),
+     NOW()),
+
+    ('prod_006', 'Scaffold System Set', 'Complete aluminum scaffold system', 899.00, 'USD',
+     'https://example.com/scaffold.jpg', 'seller_004', 'scaffold', 80, 4.6, 36, 1, 'CERT-006', 'PE-654', 1,
+     JSON_OBJECT('material', 'aluminum', 'height', '6m'),
+     JSON_ARRAY('scaffold', 'materials'),
+     NOW()),
+
+    ('prod_007', 'Safety Helmet (Premium)', 'Protective helmet with PE certification', 29.99, 'USD',
+     'https://example.com/helmet.jpg', 'seller_005', 'safety', 300, 4.9, 278, 1, 'CERT-007', 'PE-888', 0,
+     JSON_OBJECT('material', 'polycarbonate', 'weight', '420g'),
+     JSON_ARRAY('helmet', 'safety', 'ppe'),
+     NOW()),
+
+    ('prod_008', 'Welding Machine XT-500', 'High-performance welding machine for steelworks', 499.00, 'USD',
+     'https://example.com/welding.jpg', 'seller_006', 'equipment', 60, 4.7, 89, 1, 'CERT-008', 'PE-555', 1,
+     JSON_OBJECT('voltage', '220V', 'power', '5000W'),
+     JSON_ARRAY('welding', 'steel'),
+     NOW());
+
+INSERT INTO cart_items (id, user_id, product_id, quantity, price, created_at)
+VALUES
+    ('cart_001', 'user_001', 'prod_004', 1, 12999.00, NOW()),
+    ('cart_002', 'user_001', 'prod_007', 2, 29.99, NOW()),
+    ('cart_003', 'user_002', 'prod_006', 1, 899.00, NOW());
+INSERT INTO orders (
+    id, order_number, user_id, status, subtotal, shipping, tax, total, currency,
+    shipping_street, shipping_city, shipping_postal_code, shipping_country,
+    payment_method, tracking_number, estimated_delivery, created_at
+)
+VALUES
+    ('order_001', 'ORD-2025001', 'user_001', 'processing', 12999.00, 120.00, 0.00, 13119.00, 'USD',
+     '123 Main St', 'New York', '10001', 'USA', 'Credit Card',
+     'TRK-998877', DATE_ADD(NOW(), INTERVAL 7 DAY), NOW()),
+
+    ('order_002', 'ORD-2025002', 'user_002', 'shipped', 928.99, 50.00, 0.00, 978.99, 'USD',
+     '45 Industrial Road', 'Los Angeles', '90001', 'USA', 'PayPal',
+     'TRK-123456', DATE_ADD(NOW(), INTERVAL 3 DAY), NOW()),
+
+    ('order_003', 'ORD-2025003', 'user_001', 'delivered', 59.98, 10.00, 0.00, 69.98, 'USD',
+     '123 Main St', 'New York', '10001', 'USA', 'Credit Card',
+     'TRK-445566', DATE_ADD(NOW(), INTERVAL -2 DAY), NOW());
+INSERT INTO order_items (
+    id, order_id, product_id, product_name, quantity, price, subtotal, image, created_at
+)
+VALUES
+    ('item_001', 'order_001', 'prod_004', 'Heavy Duty Crane', 1, 12999.00, 12999.00, 'https://example.com/crane.jpg', NOW()),
+
+    ('item_002', 'order_002', 'prod_006', 'Scaffold System Set', 1, 899.00, 899.00, 'https://example.com/scaffold.jpg', NOW()),
+    ('item_003', 'order_002', 'prod_007', 'Safety Helmet (Premium)', 1, 29.99, 29.99, 'https://example.com/helmet.jpg', NOW()),
+
+    ('item_004', 'order_003', 'prod_007', 'Safety Helmet (Premium)', 2, 29.99, 59.98, 'https://example.com/helmet.jpg', NOW());
+INSERT INTO wishlist_items (id, user_id, product_id, created_at)
+VALUES
+    ('wish_001', 'user_001', 'prod_005', NOW()),
+    ('wish_002', 'user_001', 'prod_008', NOW()),
+    ('wish_003', 'user_002', 'prod_004', NOW()),
+    ('wish_004', 'user_003', 'prod_006', NOW());
+
+
+ALTER TABLE products
+    ADD COLUMN product_hierarchy1 VARCHAR(100) NULL,
+    ADD COLUMN product_hierarchy2 VARCHAR(100) NULL;
+CREATE TABLE product_hierarchy_mapping (
+                                           product_hierarchy1 VARCHAR(100) NOT NULL,
+                                           product_hierarchy2 VARCHAR(100) NOT NULL,
+                                           PRIMARY KEY (product_hierarchy2)  -- 假设每个二级类目唯一对应一级类目
+);
+
+SELECT p.id, p.category, m.product_hierarchy1, m.product_hierarchy2
+FROM products p
+         JOIN product_hierarchy_mapping m
+              ON p.category = m.product_hierarchy2
+WHERE (p.product_hierarchy1 IS NULL OR p.product_hierarchy2 IS NULL)
+  AND p.category IS NOT NULL;
 

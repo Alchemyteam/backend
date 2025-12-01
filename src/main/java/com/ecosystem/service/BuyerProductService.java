@@ -135,6 +135,11 @@ public class BuyerProductService {
         response.setStock(product.getStock());
         response.setRating(product.getRating());
         response.setReviewsCount(product.getReviewsCount());
+        response.setCategory(product.getCategory());
+        response.setCreatedAt(product.getCreatedAt());
+        response.setUpdatedAt(product.getUpdatedAt());
+        response.setHistoricalLowPrice(product.getHistoricalLowPrice());
+        response.setLastTransactionPrice(product.getLastTransactionPrice());
         response.setInWishlist(inWishlist);
         
         // Seller
@@ -163,6 +168,17 @@ public class BuyerProductService {
                 List<String> images = objectMapper.readValue(product.getImages(), 
                     new TypeReference<List<String>>() {});
                 response.setImages(images);
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        
+        // Tags
+        if (product.getTags() != null) {
+            try {
+                List<String> tags = objectMapper.readValue(product.getTags(), 
+                    new TypeReference<List<String>>() {});
+                response.setTags(tags);
             } catch (Exception e) {
                 // Ignore
             }

@@ -66,8 +66,14 @@ public class BuyerOrderService {
             orderItem.setSubtotal(itemSubtotal);
             orderItem.setImage(product.getImage());
             
-            // 更新库存
+            // 更新库存和最后交易价格
             product.setStock(product.getStock() - itemRequest.getQuantity());
+            product.setLastTransactionPrice(product.getPrice());
+            // 更新历史最低价
+            if (product.getHistoricalLowPrice() == null || 
+                product.getPrice().compareTo(product.getHistoricalLowPrice()) < 0) {
+                product.setHistoricalLowPrice(product.getPrice());
+            }
             productRepository.save(product);
             
             orderItems.add(orderItem);

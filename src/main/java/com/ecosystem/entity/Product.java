@@ -81,15 +81,29 @@ public class Product {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "historical_low_price", precision = 10, scale = 2)
+    private BigDecimal historicalLowPrice;
+
+    @Column(name = "last_transaction_price", precision = 10, scale = 2)
+    private BigDecimal lastTransactionPrice;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        // 初始化历史最低价为当前价格
+        if (historicalLowPrice == null && price != null) {
+            historicalLowPrice = price;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        // 更新历史最低价
+        if (price != null && (historicalLowPrice == null || price.compareTo(historicalLowPrice) < 0)) {
+            historicalLowPrice = price;
+        }
     }
 }
 

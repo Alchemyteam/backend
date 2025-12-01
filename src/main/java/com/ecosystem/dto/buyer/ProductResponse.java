@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -24,6 +25,12 @@ public class ProductResponse {
     private Integer stock;
     private BigDecimal rating;
     private Integer reviewsCount;
-    private Boolean inWishlist; // 是否在愿望清单中
+    private String category;
+    private List<String> tags;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private BigDecimal historicalLowPrice;
+    private BigDecimal lastTransactionPrice;
+    private Boolean inWishlist; // 是否在愿望清单中（前端不需要，但后端使用）
 }
 
