@@ -22,8 +22,9 @@ public class BuyerController {
     private final BuyerOrderService buyerOrderService;
     private final BuyerWishlistService buyerWishlistService;
     private final BuyerStatisticsService buyerStatisticsService;
+    private final SalesDataService salesDataService;
 
-    // ==================== 产品相关接口 ====================
+    // ==================== Product Related Endpoints ====================
 
     @GetMapping("/products/search")
     public ResponseEntity<ProductListResponse> searchProducts(
@@ -71,7 +72,7 @@ public class BuyerController {
         return ResponseEntity.ok(response);
     }
 
-    // ==================== 购物车相关接口 ====================
+    // ==================== Cart Related Endpoints ====================
 
     @PostMapping("/cart/add")
     public ResponseEntity<CartItemResponse> addToCart(
@@ -98,7 +99,7 @@ public class BuyerController {
         return ResponseEntity.ok().body(new ErrorResponse("Product removed from cart", null, null));
     }
 
-    // ==================== 订单相关接口 ====================
+    // ==================== Order Related Endpoints ====================
 
     @PostMapping("/orders")
     public ResponseEntity<OrderResponse> createOrder(
@@ -129,7 +130,7 @@ public class BuyerController {
         return ResponseEntity.ok(response);
     }
 
-    // ==================== 愿望清单相关接口 ====================
+    // ==================== Wishlist Related Endpoints ====================
 
     @PostMapping("/wishlist/add")
     public ResponseEntity<WishlistItemResponse> addToWishlist(
@@ -159,7 +160,7 @@ public class BuyerController {
         return ResponseEntity.ok().body(new ErrorResponse("Product removed from wishlist", null, null));
     }
 
-    // ==================== 统计相关接口 ====================
+    // ==================== Statistics Related Endpoints ====================
 
     @GetMapping("/statistics")
     public ResponseEntity<BuyerStatisticsResponse> getStatistics(
@@ -167,6 +168,64 @@ public class BuyerController {
             Authentication authentication) {
         String userId = authentication.getName();
         BuyerStatisticsResponse response = buyerStatisticsService.getStatistics(userId, period);
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== Sales Data Related Endpoints ====================
+
+    @GetMapping("/sales-data")
+    public ResponseEntity<SalesDataListResponse> getSalesData(
+            // Basic parameters
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "newest") String sort,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String keyword,
+            // Transaction related filter parameters
+            @RequestParam(required = false) String minDate,
+            @RequestParam(required = false) String maxDate,
+            @RequestParam(required = false) String txNo,
+            @RequestParam(required = false) Integer minQty,
+            @RequestParam(required = false) Integer maxQty,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) BigDecimal minValue,
+            @RequestParam(required = false) BigDecimal maxValue,
+            // Buyer related filter parameters
+            @RequestParam(required = false) String buyerCode,
+            @RequestParam(required = false) String buyerName,
+            // Product related filter parameters
+            @RequestParam(required = false) String itemCode,
+            @RequestParam(required = false) String itemName,
+            @RequestParam(required = false) String productHierarchy3,
+            @RequestParam(required = false) String itemType,
+            @RequestParam(required = false) String model,
+            @RequestParam(required = false) String material,
+            @RequestParam(required = false) String uom,
+            // Brand and performance filter parameters
+            @RequestParam(required = false) String brandCode,
+            @RequestParam(required = false) String performance,
+            @RequestParam(required = false) String performance1,
+            // Cost and function filter parameters
+            @RequestParam(required = false) BigDecimal minUnitCost,
+            @RequestParam(required = false) BigDecimal maxUnitCost,
+            @RequestParam(required = false) String function,
+            // Industry related filter parameters
+            @RequestParam(required = false) String sector,
+            @RequestParam(required = false) String subSector,
+            // Other filter parameters
+            @RequestParam(required = false) String source,
+            Authentication authentication) {
+        SalesDataListResponse response = salesDataService.getSalesData(
+            page, limit, sort, category, keyword,
+            minDate, maxDate, txNo, minQty, maxQty, minPrice, maxPrice, minValue, maxValue,
+            buyerCode, buyerName,
+            itemCode, itemName, productHierarchy3, itemType, model, material, uom,
+            brandCode, performance, performance1,
+            minUnitCost, maxUnitCost, function,
+            sector, subSector,
+            source
+        );
         return ResponseEntity.ok(response);
     }
 }

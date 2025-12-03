@@ -9,7 +9,7 @@ spring:
   
   # 数据库配置 (MySQL)
   datasource:
-    url: jdbc:mysql://localhost:3306/ecoschema?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/ecoschema?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root  # 请修改为你的 MySQL 用户名
     password: allinton  # 请修改为你的 MySQL 密码
@@ -17,14 +17,16 @@ spring:
   # JPA 配置
   jpa:
     hibernate:
-      ddl-auto: update  # 自动创建/更新表结构
+      ddl-auto: none  # 不自动创建/更新表结构，使用现有表
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
         hbm2ddl:
-          auto: update
+          auto: none
+        # 物理命名策略：使用 @Column 注解中指定的名称，不进行自动转换
+        physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
 # JWT 配置
 jwt:
@@ -37,4 +39,11 @@ cors:
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
+
+# LLM 配置 (Google AI Studio / Gemini)
+llm:
+  api:
+    url: https://generativelanguage.googleapis.com/v1beta  # Google Gemini API 基础地址
+    key: AIzaSyCFwNSU1VL4LqGTbFMpK_6N0VOpAJnTwxw  # Google AI Studio API Key
+  model: gemini-2.5-flash  # 使用的模型：gemini-1.5-flash (推荐), gemini-1.5-pro, gemini-pro (已弃用)
 

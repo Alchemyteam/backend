@@ -305,3 +305,69 @@ FROM products p
 WHERE (p.product_hierarchy1 IS NULL OR p.product_hierarchy2 IS NULL)
   AND p.category IS NOT NULL;
 
+CREATE TABLE sales_data (
+                            TXDate DATE,
+                            TXNo VARCHAR(50),
+                            TXQty INT,
+                            TXP1 DECIMAL(10,2),
+                            BuyerCode VARCHAR(20),
+                            BuyerName VARCHAR(255),
+                            ItemCode VARCHAR(50),
+                            ItemName TEXT,
+                            `Product Hierarchy 3` VARCHAR(100),
+                            `Function` VARCHAR(100),          -- ✅ 加了反引号
+                            ItemType VARCHAR(100),
+                            Model VARCHAR(100),
+                            Performance VARCHAR(100),
+                            `Performance.1` VARCHAR(100),
+                            Material VARCHAR(100),
+                            UOM VARCHAR(50),
+                            `Brand Code` VARCHAR(50),
+                            `Unit Cost` DECIMAL(10,4),
+                            Sector VARCHAR(100),           -- 原列名有空格，保留
+                            SubSector VARCHAR(100),
+                            Value DECIMAL(10,4),
+                            Rationale VARCHAR(255),
+                            www VARCHAR(255),
+                            Source VARCHAR(50)
+);
+
+SELECT ItemName
+FROM sales_data
+WHERE ItemName LIKE '%19P SPARE ELEMENT%';
+
+DROP TABLE IF EXISTS `sales_data`;
+
+CREATE TABLE `sales_data` (
+                              `TXDate` VARCHAR(255),
+                              `TXNo` VARCHAR(255),
+                              `TXQty` VARCHAR(255),
+                              `TXP1` VARCHAR(255),
+                              `BuyerCode` VARCHAR(255),
+                              `BuyerName` VARCHAR(255),
+                              `ItemCode` VARCHAR(255),
+                              `ItemName` VARCHAR(255),
+                              `Product Hierarchy 3` VARCHAR(255),
+                              `Function` VARCHAR(255),
+                              `ItemType` VARCHAR(255),
+                              `Model` VARCHAR(255),
+                              `Performance` VARCHAR(255),
+                              `Performance.1` VARCHAR(255),
+                              `Material` VARCHAR(255),
+                              `UOM` VARCHAR(255),
+                              `Brand Code` VARCHAR(255),
+                              `Unit Cost` VARCHAR(255),
+                              `Sector` VARCHAR(255),
+                              `SubSector` VARCHAR(255),
+                              `Value` VARCHAR(255),
+                              `Rationale` VARCHAR(255),
+                              `www` VARCHAR(255),
+                              `Source` VARCHAR(255)
+);
+
+SELECT COUNT(*)
+FROM sales_data
+WHERE LOWER(TRIM(`Product Hierarchy 3`)) = LOWER('Site Safety Equipment');
+SELECT DISTINCT `Product Hierarchy 3`
+FROM ecoschema.sales_data
+WHERE LOWER(TRIM(`Product Hierarchy 3`)) = LOWER('Site Safety Equipment');
