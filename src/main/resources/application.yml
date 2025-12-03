@@ -17,7 +17,7 @@ spring:
   # JPA 配置
   jpa:
     hibernate:
-      ddl-auto: none  # 不自动创建/更新表结构，使用现有表
+      ddl-auto: none  # Do not auto-create/update table structure, use existing tables
     show-sql: true
     properties:
       hibernate:
@@ -25,8 +25,16 @@ spring:
         format_sql: true
         hbm2ddl:
           auto: none
-        # 物理命名策略：使用 @Column 注解中指定的名称，不进行自动转换
+        # Physical naming strategy: use column names specified in @Column annotation, no auto conversion
         physical_naming_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+  # Flyway Database Migration Configuration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # Create baseline for existing databases
+    validate-on-migrate: true  # Validate migrations on startup
+    clean-disabled: true  # Disable clean command for safety
 
 # JWT 配置
 jwt:
