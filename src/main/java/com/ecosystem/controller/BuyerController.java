@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/buyer")
@@ -227,6 +228,37 @@ public class BuyerController {
             source
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/sales-data")
+    public ResponseEntity<SalesDataResponse> createSalesData(
+            @Valid @RequestBody SalesDataRequest request,
+            Authentication authentication) {
+        SalesDataResponse response = salesDataService.createSalesData(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/sales-data/{txNo}")
+    public ResponseEntity<SalesDataResponse> updateSalesData(
+            @PathVariable String txNo,
+            @Valid @RequestBody SalesDataRequest request,
+            Authentication authentication) {
+        SalesDataResponse response = salesDataService.updateSalesData(txNo, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/sales-data/{txNo}")
+    public ResponseEntity<?> deleteSalesData(
+            @PathVariable String txNo,
+            Authentication authentication) {
+        salesDataService.deleteSalesData(txNo);
+        return ResponseEntity.ok().body(new ErrorResponse("Sales data deleted successfully", null, null));
+    }
+
+    @GetMapping("/sales-data/categories")
+    public ResponseEntity<List<String>> getSalesDataCategories(Authentication authentication) {
+        List<String> categories = salesDataService.getCategories();
+        return ResponseEntity.ok(categories);
     }
 }
 

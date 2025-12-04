@@ -326,5 +326,13 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
         @Param("sort") String sort,
         Pageable pageable
     );
+
+    // Get distinct category values for dropdown options
+    @Query(value = "SELECT DISTINCT `Product Hierarchy 3` " +
+           "FROM ecoschema.sales_data " +
+           "WHERE `Product Hierarchy 3` IS NOT NULL AND `Product Hierarchy 3` != '' " +
+           "ORDER BY `Product Hierarchy 3` ASC",
+           nativeQuery = true)
+    List<String> findDistinctCategories();
 }
 

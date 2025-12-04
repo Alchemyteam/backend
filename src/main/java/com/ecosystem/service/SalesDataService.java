@@ -2,6 +2,7 @@ package com.ecosystem.service;
 
 import com.ecosystem.dto.buyer.PaginationResponse;
 import com.ecosystem.dto.buyer.SalesDataListResponse;
+import com.ecosystem.dto.buyer.SalesDataRequest;
 import com.ecosystem.dto.buyer.SalesDataResponse;
 import com.ecosystem.entity.SalesData;
 import com.ecosystem.repository.SalesDataRepository;
@@ -92,6 +93,181 @@ public class SalesDataService {
         return new SalesDataListResponse(data, pagination);
     }
 
+    /**
+     * Create new sales data record
+     * @param request The sales data to create
+     * @return The created sales data as response DTO
+     */
+    public SalesDataResponse createSalesData(SalesDataRequest request) {
+        // Convert Request DTO → Entity
+        SalesData entity = toSalesDataEntity(request);
+
+        // Save to database
+        SalesData savedEntity = salesDataRepository.save(entity);
+
+        // Convert Entity → Response DTO and return
+        return toSalesDataResponse(savedEntity);
+    }
+
+    /**
+     * Update existing sales data record
+     * @param txNo The transaction number (ID) of the record to update
+     * @param request The updated sales data
+     * @return The updated sales data as response DTO
+     */
+    public SalesDataResponse updateSalesData(String txNo, SalesDataRequest request) {
+        // Check if record exists
+        SalesData existingEntity = salesDataRepository.findById(txNo)
+                .orElseThrow(() -> new RuntimeException("Sales data not found with TXNo: " + txNo));
+
+        // Update the entity with new values
+        updateEntityFromRequest(existingEntity, request);
+
+        // Save updated entity to database
+        SalesData updatedEntity = salesDataRepository.save(existingEntity);
+
+        // Convert Entity → Response DTO and return
+        return toSalesDataResponse(updatedEntity);
+    }
+
+    /**
+     * Delete sales data record
+     * @param txNo The transaction number (ID) of the record to delete
+     */
+    public void deleteSalesData(String txNo) {
+        // Check if record exists
+        SalesData existingEntity = salesDataRepository.findById(txNo)
+                .orElseThrow(() -> new RuntimeException("Sales data not found with TXNo: " + txNo));
+
+        // Delete from database
+        salesDataRepository.delete(existingEntity);
+    }
+
+    /**
+     * Get distinct category values for dropdown options
+     * @return List of unique category names
+     */
+    public List<String> getCategories() {
+        return salesDataRepository.findDistinctCategories();
+    }
+
+    /**
+     * Update an existing entity with values from request
+     * This allows updating without creating a new object
+     */
+    private void updateEntityFromRequest(SalesData entity, SalesDataRequest request) {
+        // Update the ID (in case it changed in the request)
+        entity.setTxNo(request.getTxNo());
+
+        // Convert and update LocalDate → String
+        if (request.getTxDate() != null) {
+            entity.setTxDate(request.getTxDate().toString());
+        } else {
+            entity.setTxDate(null);
+        }
+
+        // Convert and update Integer → String
+        if (request.getTxQty() != null) {
+            entity.setTxQty(request.getTxQty().toString());
+        } else {
+            entity.setTxQty(null);
+        }
+
+        // Convert and update BigDecimal → String
+        if (request.getTxP1() != null) {
+            entity.setTxP1(request.getTxP1().toString());
+        } else {
+            entity.setTxP1(null);
+        }
+
+        if (request.getUnitCost() != null) {
+            entity.setUnitCost(request.getUnitCost().toString());
+        } else {
+            entity.setUnitCost(null);
+        }
+
+        if (request.getValue() != null) {
+            entity.setValue(request.getValue().toString());
+        } else {
+            entity.setValue(null);
+        }
+
+        // Update string fields
+        entity.setBuyerCode(request.getBuyerCode());
+        entity.setBuyerName(request.getBuyerName());
+        entity.setItemCode(request.getItemCode());
+        entity.setItemName(request.getItemName());
+        entity.setProductHierarchy3(request.getProductHierarchy3());
+        entity.setFunction(request.getFunction());
+        entity.setItemType(request.getItemType());
+        entity.setModel(request.getModel());
+        entity.setPerformance(request.getPerformance());
+        entity.setPerformance1(request.getPerformance1());
+        entity.setMaterial(request.getMaterial());
+        entity.setUom(request.getUom());
+        entity.setBrandCode(request.getBrandCode());
+        entity.setSector(request.getSector());
+        entity.setSubSector(request.getSubSector());
+        entity.setRationale(request.getRationale());
+        entity.setWww(request.getWww());
+        entity.setSource(request.getSource());
+    }
+
+    /**
+     * Convert SalesDataRequest DTO to SalesData Entity
+     * This is the REVERSE of toSalesDataResponse()
+     */
+    private SalesData toSalesDataEntity(SalesDataRequest request) {
+        SalesData entity = new SalesData();
+
+        // Set the ID (required field)
+        entity.setTxNo(request.getTxNo());
+
+        // Convert LocalDate → String for database
+        if (request.getTxDate() != null) {
+            entity.setTxDate(request.getTxDate().toString()); // "2024-01-15"
+        }
+
+        // Convert Integer → String for database
+        if (request.getTxQty() != null) {
+            entity.setTxQty(request.getTxQty().toString());
+        }
+
+        // Convert BigDecimal → String for database
+        if (request.getTxP1() != null) {
+            entity.setTxP1(request.getTxP1().toString());
+        }
+
+        if (request.getUnitCost() != null) {
+            entity.setUnitCost(request.getUnitCost().toString());
+        }
+
+        if (request.getValue() != null) {
+            entity.setValue(request.getValue().toString());
+        }
+
+        // Direct string assignments (no conversion needed)
+        entity.setBuyerCode(request.getBuyerCode());
+        entity.setBuyerName(request.getBuyerName());
+        entity.setItemCode(request.getItemCode());
+        entity.setItemName(request.getItemName());
+        entity.setProductHierarchy3(request.getProductHierarchy3());
+        entity.setFunction(request.getFunction());
+        entity.setItemType(request.getItemType());
+        entity.setModel(request.getModel());
+        entity.setPerformance(request.getPerformance());
+        entity.setPerformance1(request.getPerformance1());
+        entity.setMaterial(request.getMaterial());
+        entity.setUom(request.getUom());
+        entity.setBrandCode(request.getBrandCode());
+        entity.setSector(request.getSector());
+        entity.setSubSector(request.getSubSector());
+        entity.setRationale(request.getRationale());
+        entity.setWww(request.getWww());
+        entity.setSource(request.getSource());
+
+        return entity;
+    }
 
     private SalesDataResponse toSalesDataResponse(SalesData salesData) {
         SalesDataResponse response = new SalesDataResponse();
