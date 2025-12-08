@@ -42,8 +42,15 @@ public class MaterialSearchService {
             return results;
         }
         
-        // 2. 组合搜索（支持任意字段的组合）
-        if (criteria.isCombinedSearch()) {
+        // 2. 多关键词搜索（优先处理）
+        if (criteria.hasKeywords() && criteria.getKeywords().size() > 1) {
+            log.info("Performing multi-keyword search with {} keywords: {}", 
+                criteria.getKeywords().size(), criteria.getKeywords());
+            results = performMultiKeywordSearch(criteria.getKeywords());
+            log.info("Multi-keyword search found {} results", results.size());
+        }
+        // 3. 组合搜索（支持任意字段的组合）
+        else if (criteria.isCombinedSearch()) {
             log.info("Performing combined search with multiple conditions");
             results = performCombinedSearch(criteria);
             log.info("Combined search found {} results", results.size());
@@ -146,6 +153,33 @@ public class MaterialSearchService {
                 criteria.getStartDate(), criteria.getEndDate());
         }
         return results;
+    }
+    
+    /**
+     * 多关键词搜索（支持多个关键词在多个字段中搜索）
+     * 每个关键词必须在至少一个字段中匹配，所有关键词都必须匹配（AND 逻辑）
+     */
+    private List<SalesData> performMultiKeywordSearch(List<String> keywords) {
+        log.info("Performing multi-keyword search with keywords: {}", keywords);
+        
+        // 限制最多5个关键词（与 Repository 方法参数匹配）
+        List<String> limitedKeywords = keywords.stream()
+            .limit(5)
+            .collect(Collectors.toList());
+        
+        // 如果关键词少于5个，用 null 填充
+        while (limitedKeywords.size() < 5) {
+            limitedKeywords.add(null);
+        }
+        
+        return salesDataRepository.searchByMultipleKeywords(
+            limitedKeywords.get(0),
+            limitedKeywords.get(1),
+            limitedKeywords.get(2),
+            limitedKeywords.get(3),
+            limitedKeywords.get(4),
+            100
+        );
     }
     
     /**

@@ -68,18 +68,23 @@ public class LLMSearchParser {
             String[] parts = query.split("\\s*[+]\\s*|\\s+and\\s+|\\s+和\\s+");
             log.info("Split query into {} parts: {}", parts.length, java.util.Arrays.toString(parts));
             
+            // 收集所有关键词（用于多字段搜索）
+            List<String> keywords = new ArrayList<>();
+            boolean hasSpecificField = false;
+            
             // 对每个部分单独解析（创建新的 criteria 避免互相干扰）
             for (String part : parts) {
                 part = part.trim();
                 if (part.isEmpty()) continue;
                 
                 // 优先检查是否是买家名称格式（在解析之前）
-                boolean isBuyerName = part.matches(".*\\b(LIMITED|PRIVATE|COMPANY|CORP|INC|LLC|PTE|LTD|SINGAPORE|SINGAPORE PRIVATE)\\b.*") || 
-                                     part.length() > 20;
+                // 注意：不要仅根据长度判断，要检查是否包含公司相关关键词
+                boolean isBuyerName = part.matches(".*\\b(LIMITED|PRIVATE|COMPANY|CORP|INC|LLC|PTE|LTD|SINGAPORE|SINGAPORE PRIVATE)\\b.*");
                 
                 if (isBuyerName && !criteria.hasBuyerName()) {
                     criteria.setBuyerName(part);
                     log.info("Detected BuyerName from part (before parsing): {}", criteria.getBuyerName());
+                    hasSpecificField = true;
                     continue; // 跳过后续解析，直接作为买家名称
                 }
                 
@@ -88,43 +93,51 @@ public class LLMSearchParser {
                 // 递归解析这个部分（但不检查 "+"，避免无限递归）
                 partCriteria = parseSingleQuery(part, partCriteria);
                 
-                // 合并结果到主 criteria（支持多个相同类型的条件，取第一个）
-                if (partCriteria.hasItemCode() && !criteria.hasItemCode()) {
-                    criteria.setItemCode(partCriteria.getItemCode());
-                }
-                if (partCriteria.hasCategory() && !criteria.hasCategory()) {
-                    criteria.setProductHierarchy3(partCriteria.getProductHierarchy3());
-                }
-                if (partCriteria.hasFunction() && !criteria.hasFunction()) {
-                    criteria.setFunction(partCriteria.getFunction());
-                }
-                if (partCriteria.hasBrand() && !criteria.hasBrand()) {
-                    criteria.setBrandCode(partCriteria.getBrandCode());
-                }
-                if (partCriteria.hasItemNameKeyword() && !criteria.hasItemNameKeyword()) {
-                    criteria.setItemNameKeyword(partCriteria.getItemNameKeyword());
-                }
+                // 检查是否被识别为特定字段（ItemCode, Category, Function, Brand）
+                boolean isSpecificField = partCriteria.hasItemCode() || 
+                                         partCriteria.hasCategory() || 
+                                         partCriteria.hasFunction() || 
+                                         partCriteria.hasBrand();
                 
-                // 如果部分没有被识别为任何特定类型，尝试作为买家名称或物料名称关键字
-                if (!partCriteria.hasItemCode() && !partCriteria.hasCategory() && 
-                    !partCriteria.hasFunction() && !partCriteria.hasBrand() && 
-                    !partCriteria.hasItemNameKeyword()) {
-                    // 检查是否是买家名称格式
-                    boolean isBuyerNameFormat = part.matches(".*\\b(LIMITED|PRIVATE|COMPANY|CORP|INC|LLC|PTE|LTD|SINGAPORE|SINGAPORE PRIVATE)\\b.*") || 
-                                               part.length() > 15;
-                    
-                    if (isBuyerNameFormat && !criteria.hasBuyerName()) {
-                        criteria.setBuyerName(part);
-                        log.info("Detected BuyerName from part (after parsing): {}", criteria.getBuyerName());
-                    } else if (!criteria.hasItemNameKeyword()) {
-                        // 否则作为物料名称关键字（用于在 ItemName 字段中搜索）
-                        criteria.setItemNameKeyword(part);
-                        log.info("Extracted ItemName keyword from part: {}", criteria.getItemNameKeyword());
+                if (isSpecificField) {
+                    // 合并结果到主 criteria（支持多个相同类型的条件，取第一个）
+                    if (partCriteria.hasItemCode() && !criteria.hasItemCode()) {
+                        criteria.setItemCode(partCriteria.getItemCode());
+                        hasSpecificField = true;
                     }
+                    if (partCriteria.hasCategory() && !criteria.hasCategory()) {
+                        criteria.setProductHierarchy3(partCriteria.getProductHierarchy3());
+                        hasSpecificField = true;
+                    }
+                    if (partCriteria.hasFunction() && !criteria.hasFunction()) {
+                        criteria.setFunction(partCriteria.getFunction());
+                        hasSpecificField = true;
+                    }
+                    if (partCriteria.hasBrand() && !criteria.hasBrand()) {
+                        criteria.setBrandCode(partCriteria.getBrandCode());
+                        hasSpecificField = true;
+                    }
+                } else {
+                    // 没有被识别为特定字段，作为关键词添加到列表（用于多字段搜索）
+                    keywords.add(part);
+                    log.info("Added part as keyword for multi-field search: {}", part);
                 }
             }
             
-            // 组合查询解析完成，直接返回
+            // 如果有多个关键词且没有特定字段，使用多关键词搜索
+            if (keywords.size() > 1 && !hasSpecificField) {
+                criteria.setKeywords(keywords);
+                criteria.setSearchType(MaterialSearchCriteria.SearchType.COMBINED);
+                log.info("Using multi-keyword search with {} keywords: {}", keywords.size(), keywords);
+            } else if (keywords.size() == 1 && !hasSpecificField) {
+                // 如果只有一个关键词，作为 ItemName 关键字
+                criteria.setItemNameKeyword(keywords.get(0));
+                log.info("Using single keyword as ItemName keyword: {}", keywords.get(0));
+            } else {
+                // 标记为组合搜索
+                criteria.setSearchType(MaterialSearchCriteria.SearchType.COMBINED);
+            }
+            
             return criteria;
         }
         

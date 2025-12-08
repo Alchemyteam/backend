@@ -24,9 +24,10 @@ public class CartItem {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // 改为关联 SalesData 表，使用 Long 类型的 id
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    private SalesData salesData;
 
     @Column(nullable = false)
     private Integer quantity = 1;

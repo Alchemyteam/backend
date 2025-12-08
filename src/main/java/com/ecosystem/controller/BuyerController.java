@@ -76,11 +76,11 @@ public class BuyerController {
     // ==================== Cart Related Endpoints ====================
 
     @PostMapping("/cart/add")
-    public ResponseEntity<CartItemResponse> addToCart(
+    public ResponseEntity<AddToCartResponse> addToCart(
             @Valid @RequestBody AddToCartRequest request,
             Authentication authentication) {
         String userId = authentication.getName();
-        CartItemResponse response = buyerCartService.addToCart(userId, request);
+        AddToCartResponse response = buyerCartService.addToCart(userId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -91,13 +91,23 @@ public class BuyerController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/cart/{cartItemId}")
+    public ResponseEntity<CartItemResponse> updateCartItem(
+            @PathVariable String cartItemId,
+            @Valid @RequestBody UpdateCartItemRequest request,
+            Authentication authentication) {
+        String userId = authentication.getName();
+        CartItemResponse response = buyerCartService.updateCartItem(userId, cartItemId, request);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/cart/{cartItemId}")
     public ResponseEntity<?> removeFromCart(
             @PathVariable String cartItemId,
             Authentication authentication) {
         String userId = authentication.getName();
         buyerCartService.removeFromCart(userId, cartItemId);
-        return ResponseEntity.ok().body(new ErrorResponse("Product removed from cart", null, null));
+        return ResponseEntity.ok().body(new ErrorResponse("Cart item removed successfully", null, null));
     }
 
     // ==================== Order Related Endpoints ====================

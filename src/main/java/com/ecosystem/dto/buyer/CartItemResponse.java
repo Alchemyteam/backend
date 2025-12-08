@@ -10,9 +10,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CartItemResponse {
-    private String id;
-    private ProductResponse product;
-    private Integer quantity;
-    private BigDecimal subtotal;
+    private String id;                    // 购物车项ID
+    private CartProductResponse product;  // 商品信息（简化版）
+    private Integer quantity;             // 商品数量
+    private BigDecimal subtotal;          // 小计
 }
 

@@ -10,7 +10,8 @@ import java.util.Optional;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, String> {
     List<CartItem> findByUser_Id(String userId);
-    Optional<CartItem> findByUser_IdAndProduct_Id(String userId, String productId);
+    // 修改为使用 Long 类型的 productId（对应 sales_data.id）
+    Optional<CartItem> findByUser_IdAndSalesData_Id(String userId, Long productId);
     void deleteByUser_Id(String userId);
     long countByUser_Id(String userId);
 }

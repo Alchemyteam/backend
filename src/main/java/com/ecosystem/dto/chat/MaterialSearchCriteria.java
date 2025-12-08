@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 物料搜索条件
@@ -33,6 +34,19 @@ public class MaterialSearchCriteria {
     private LocalDate endDate;            // 结束日期
     private String sector;                // 行业
     private String subSector;             // 子行业
+    
+    // 新增字段支持
+    private String itemType;              // 物料类型
+    private String model;                 // 型号
+    private String performance;           // 性能
+    private String performance1;         // 性能1
+    private String material;              // 材料
+    private String bundled;               // 捆绑
+    private String origin;                 // 产地
+    private String uom;                    // 单位
+    
+    // 多关键词搜索（用于 "+" 分隔的查询）
+    private List<String> keywords;        // 多个关键词列表（如 ["19P", "5 micron", "99 percent efficiency"]）
     
     // 原始查询（用于全文搜索回退）
     private String rawQuery;              // 原始查询文本
@@ -85,6 +99,42 @@ public class MaterialSearchCriteria {
         return startDate != null || endDate != null;
     }
     
+    public boolean hasKeywords() {
+        return keywords != null && !keywords.isEmpty();
+    }
+    
+    public boolean hasItemType() {
+        return itemType != null && !itemType.trim().isEmpty();
+    }
+    
+    public boolean hasModel() {
+        return model != null && !model.trim().isEmpty();
+    }
+    
+    public boolean hasPerformance() {
+        return performance != null && !performance.trim().isEmpty();
+    }
+    
+    public boolean hasPerformance1() {
+        return performance1 != null && !performance1.trim().isEmpty();
+    }
+    
+    public boolean hasMaterial() {
+        return material != null && !material.trim().isEmpty();
+    }
+    
+    public boolean hasBundled() {
+        return bundled != null && !bundled.trim().isEmpty();
+    }
+    
+    public boolean hasOrigin() {
+        return origin != null && !origin.trim().isEmpty();
+    }
+    
+    public boolean hasUom() {
+        return uom != null && !uom.trim().isEmpty();
+    }
+    
     public boolean isCombinedSearch() {
         int conditionCount = 0;
         if (hasItemCode()) conditionCount++;
@@ -96,6 +146,15 @@ public class MaterialSearchCriteria {
         if (hasBuyerCode()) conditionCount++;
         if (hasPriceRange()) conditionCount++;
         if (hasDateRange()) conditionCount++;
+        if (hasItemType()) conditionCount++;
+        if (hasModel()) conditionCount++;
+        if (hasPerformance()) conditionCount++;
+        if (hasPerformance1()) conditionCount++;
+        if (hasMaterial()) conditionCount++;
+        if (hasBundled()) conditionCount++;
+        if (hasOrigin()) conditionCount++;
+        if (hasUom()) conditionCount++;
+        if (hasKeywords()) conditionCount++;
         
         // 如果只有品类和功能，且功能是品类名称的一部分，不算组合搜索
         if (conditionCount == 2 && hasCategory() && hasFunction()) {

@@ -255,7 +255,7 @@ public class ChatService {
                 
                 TableData tableData = new TableData();
                 tableData.setTitle("Material Search Results");
-                tableData.setHeaders(Arrays.asList("Item Code", "Item Name", "Price", "Date", "Category", "Brand"));
+                tableData.setHeaders(Arrays.asList("id", "Item Code", "Item Name", "Price", "Date", "Category", "Brand", "Function"));
                 tableData.setRows(Collections.emptyList());
                 tableData.setDescription("No results found for: " + message);
                 response.setTableData(tableData);
@@ -264,21 +264,37 @@ public class ChatService {
             }
         }
         
-        // 构建表格数据
+        // 构建表格数据（包含所有相关字段）
         TableData tableData = new TableData();
         tableData.setTitle("Material Search Results");
-        tableData.setHeaders(Arrays.asList("Item Code", "Item Name", "Price", "Date", "Category", "Brand", "Function"));
+        tableData.setHeaders(Arrays.asList(
+            "id", "Item Code", "Item Name", "Function", "ItemType", "Model", 
+            "Performance", "Performance.1", "Material", "Brand Code", 
+            "Bundled", "Origin", "UOM", "TXP1", "TXP2", "Date", "Category"
+        ));
         
         List<Map<String, Object>> rows = salesDataList.stream()
             .map(salesData -> {
                 Map<String, Object> row = new HashMap<>();
+                // 添加 id 字段（主键）
+                row.put("id", salesData.getId() != null ? salesData.getId() : "N/A");
                 row.put("Item Code", salesData.getItemCode() != null ? salesData.getItemCode() : "N/A");
                 row.put("Item Name", salesData.getItemName() != null ? salesData.getItemName() : "N/A");
-                row.put("Price", salesData.getTxP1() != null ? salesData.getTxP1() : "N/A");
+                row.put("Function", salesData.getFunction() != null ? salesData.getFunction() : "N/A");
+                row.put("ItemType", salesData.getItemType() != null ? salesData.getItemType() : "N/A");
+                row.put("Model", salesData.getModel() != null ? salesData.getModel() : "N/A");
+                row.put("Performance", salesData.getPerformance() != null ? salesData.getPerformance() : "N/A");
+                row.put("Performance.1", salesData.getPerformance1() != null ? salesData.getPerformance1() : "N/A");
+                row.put("Material", salesData.getMaterial() != null ? salesData.getMaterial() : "N/A");
+                row.put("Brand Code", salesData.getBrandCode() != null ? salesData.getBrandCode() : "N/A");
+                // 注意：Bundled, Origin, TXP2 字段可能不存在，如果不存在会返回 null
+                row.put("Bundled", salesData.getBundled() != null ? salesData.getBundled() : "N/A");
+                row.put("Origin", salesData.getOrigin() != null ? salesData.getOrigin() : "N/A");
+                row.put("UOM", salesData.getUom() != null ? salesData.getUom() : "N/A");
+                row.put("TXP1", salesData.getTxP1() != null ? salesData.getTxP1() : "N/A");
+                row.put("TXP2", salesData.getTxP2() != null ? salesData.getTxP2() : "N/A");
                 row.put("Date", salesData.getTxDate() != null ? salesData.getTxDate() : "N/A");
                 row.put("Category", salesData.getProductHierarchy3() != null ? salesData.getProductHierarchy3() : "N/A");
-                row.put("Brand", salesData.getBrandCode() != null ? salesData.getBrandCode() : "N/A");
-                row.put("Function", salesData.getFunction() != null ? salesData.getFunction() : "N/A");
                 return row;
             })
             .collect(Collectors.toList());

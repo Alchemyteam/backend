@@ -30,7 +30,7 @@ spring:
 
   # Flyway Database Migration Configuration
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true  # Create baseline for existing databases
     validate-on-migrate: true  # Validate migrations on startup
@@ -52,6 +52,6 @@ cors:
 llm:
   api:
     url: https://generativelanguage.googleapis.com/v1beta  # Google Gemini API 基础地址
-    key: AIzaSyCFwNSU1VL4LqGTbFMpK_6N0VOpAJnTwxw  # Google AI Studio API Key
+    key: AIzaSyA5281bkBTVre-wwALoWx6Kr3incLfVjZs  # Google AI Studio API Key
   model: gemini-2.5-flash  # 使用的模型：gemini-1.5-flash (推荐), gemini-1.5-pro, gemini-pro (已弃用)
 

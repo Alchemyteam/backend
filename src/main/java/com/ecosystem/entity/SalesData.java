@@ -29,6 +29,10 @@ public class SalesData {
     @Column(name = "`TXP1`", length = 255)
     private String txP1;
 
+    // 注意：TXP2 字段暂时不存在于数据库中，使用 @Transient 避免 Hibernate 尝试读取
+    @Transient
+    private String txP2;
+
     @Column(name = "`BuyerCode`", length = 255)
     private String buyerCode;
 
@@ -64,6 +68,13 @@ public class SalesData {
 
     @Column(name = "`UOM`", length = 255)
     private String uom;
+
+    // 注意：Bundled 和 Origin 字段暂时不存在于数据库中，使用 @Transient 避免 Hibernate 尝试读取
+    @Transient
+    private String bundled;
+
+    @Transient
+    private String origin;
 
     @Column(name = "`Brand Code`", length = 255)
     private String brandCode;

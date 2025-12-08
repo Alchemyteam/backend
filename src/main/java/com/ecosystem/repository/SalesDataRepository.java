@@ -139,6 +139,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, Long> {
     List<SalesData> findByBrandCode(@Param("brandCode") String brandCode, @Param("limit") int limit);
     
     // 6. Combined criteria search (supports Unit Cost and TXP1 price fields, fuzzy matching for buyer name and category)
+    // 注意：暂时不包含 TXP2, Bundled, Origin（如果数据库中没有这些字段）
     @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
@@ -170,10 +171,84 @@ public interface SalesDataRepository extends JpaRepository<SalesData, Long> {
         @Param("limit") int limit
     );
     
-    // 7. Full-text search (search in all relevant fields)
+    // 8. Multi-field multi-keyword search (支持多个关键词在多个字段中搜索)
+    // 每个关键词必须在至少一个字段中匹配，所有关键词都必须匹配（AND 逻辑）
+    // 注意：暂时不包含 TXP2, Bundled, Origin（如果数据库中没有这些字段）
     @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
+           "FROM ecoschema.sales_data " +
+           "WHERE (:keyword1 IS NULL OR " +
+           "  LOWER(`Function`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`ItemType`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`Model`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`Performance`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`Performance.1`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`Material`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`Brand Code`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`UOM`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword1, '%')) OR " +
+           "  LOWER(`ItemCode`) LIKE LOWER(CONCAT('%', :keyword1, '%'))) " +
+           "AND (:keyword2 IS NULL OR " +
+           "  LOWER(`Function`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`ItemType`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`Model`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`Performance`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`Performance.1`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`Material`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`Brand Code`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`UOM`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword2, '%')) OR " +
+           "  LOWER(`ItemCode`) LIKE LOWER(CONCAT('%', :keyword2, '%'))) " +
+           "AND (:keyword3 IS NULL OR " +
+           "  LOWER(`Function`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`ItemType`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`Model`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`Performance`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`Performance.1`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`Material`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`Brand Code`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`UOM`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword3, '%')) OR " +
+           "  LOWER(`ItemCode`) LIKE LOWER(CONCAT('%', :keyword3, '%'))) " +
+           "AND (:keyword4 IS NULL OR " +
+           "  LOWER(`Function`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`ItemType`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`Model`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`Performance`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`Performance.1`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`Material`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`Brand Code`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`UOM`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword4, '%')) OR " +
+           "  LOWER(`ItemCode`) LIKE LOWER(CONCAT('%', :keyword4, '%'))) " +
+           "AND (:keyword5 IS NULL OR " +
+           "  LOWER(`Function`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`ItemType`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`Model`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`Performance`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`Performance.1`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`Material`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`Brand Code`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`UOM`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword5, '%')) OR " +
+           "  LOWER(`ItemCode`) LIKE LOWER(CONCAT('%', :keyword5, '%'))) " +
+           "ORDER BY STR_TO_DATE(`TXDate`, '%Y-%m-%d') DESC " +
+           "LIMIT :limit",
+           nativeQuery = true)
+    List<SalesData> searchByMultipleKeywords(
+        @Param("keyword1") String keyword1,
+        @Param("keyword2") String keyword2,
+        @Param("keyword3") String keyword3,
+        @Param("keyword4") String keyword4,
+        @Param("keyword5") String keyword5,
+        @Param("limit") int limit
+    );
+    
+    // 7. Full-text search (search in all relevant fields)
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `TXP2`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+           "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
+           "`UOM`, `Bundled`, `Origin`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
            "WHERE LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "   OR LOWER(`ItemCode`) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
@@ -336,6 +411,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, Long> {
     List<String> findDistinctCategories();
     
     // Get product detail by ItemCode (get first record for basic info, for backward compatibility)
+    // 注意：暂时不包含 TXP2, Bundled, Origin（如果数据库中没有这些字段）
     @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +

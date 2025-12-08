@@ -373,3 +373,7 @@ FROM ecoschema.sales_data
 WHERE LOWER(TRIM(`Product Hierarchy 3`)) = LOWER('Site Safety Equipment');
 ALTER TABLE `sales_data`
     ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY;
+
+USE ecoschema;
+DESCRIBE sales_data;
+SHOW COLUMNS FROM sales_data IN ecoschema;
