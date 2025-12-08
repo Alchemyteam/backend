@@ -13,6 +13,10 @@ import lombok.NoArgsConstructor;
 public class SalesData {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
     @Column(name = "`TXNo`", length = 255)
     private String txNo;
 

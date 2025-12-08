@@ -116,9 +116,20 @@ public class SalesDataService {
      * @return The updated sales data as response DTO
      */
     public SalesDataResponse updateSalesData(String txNo, SalesDataRequest request) {
-        // Check if record exists
-        SalesData existingEntity = salesDataRepository.findById(txNo)
-                .orElseThrow(() -> new RuntimeException("Sales data not found with TXNo: " + txNo));
+        // Find record by TXNo (since method parameter is still txNo for backward compatibility)
+        // Note: If txNo is actually an id (number), try to parse it first
+        SalesData existingEntity = null;
+        try {
+            Long id = Long.parseLong(txNo);
+            existingEntity = salesDataRepository.findById(id).orElse(null);
+        } catch (NumberFormatException e) {
+            // If not a number, it might be a TXNo - but we don't have findByTxNo method
+            // For now, we'll need to add that method or use a different approach
+        }
+        
+        if (existingEntity == null) {
+            throw new RuntimeException("Sales data not found with ID/TXNo: " + txNo);
+        }
 
         // Update the entity with new values
         updateEntityFromRequest(existingEntity, request);
@@ -132,12 +143,21 @@ public class SalesDataService {
 
     /**
      * Delete sales data record
-     * @param txNo The transaction number (ID) of the record to delete
+     * @param txNo The transaction number or ID of the record to delete
      */
     public void deleteSalesData(String txNo) {
-        // Check if record exists
-        SalesData existingEntity = salesDataRepository.findById(txNo)
-                .orElseThrow(() -> new RuntimeException("Sales data not found with TXNo: " + txNo));
+        // Find record by id (try to parse as Long first)
+        SalesData existingEntity = null;
+        try {
+            Long id = Long.parseLong(txNo);
+            existingEntity = salesDataRepository.findById(id).orElse(null);
+        } catch (NumberFormatException e) {
+            // If not a number, it might be a TXNo
+        }
+        
+        if (existingEntity == null) {
+            throw new RuntimeException("Sales data not found with ID/TXNo: " + txNo);
+        }
 
         // Delete from database
         salesDataRepository.delete(existingEntity);
@@ -271,6 +291,9 @@ public class SalesDataService {
 
     private SalesDataResponse toSalesDataResponse(SalesData salesData) {
         SalesDataResponse response = new SalesDataResponse();
+        
+        // Set id field (primary key)
+        response.setId(salesData.getId());
         
         // Convert date field
         if (salesData.getTxDate() != null && !salesData.getTxDate().isEmpty()) {

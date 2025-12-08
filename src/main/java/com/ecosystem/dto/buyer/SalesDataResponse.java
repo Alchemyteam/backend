@@ -14,6 +14,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class SalesDataResponse {
     
+    @JsonProperty("id")
+    private Long id;
+    
     @JsonProperty("TXDate")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate txDate;

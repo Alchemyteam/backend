@@ -371,3 +371,5 @@ WHERE LOWER(TRIM(`Product Hierarchy 3`)) = LOWER('Site Safety Equipment');
 SELECT DISTINCT `Product Hierarchy 3`
 FROM ecoschema.sales_data
 WHERE LOWER(TRIM(`Product Hierarchy 3`)) = LOWER('Site Safety Equipment');
+ALTER TABLE `sales_data`
+    ADD COLUMN id INT NOT NULL AUTO_INCREMENT PRIMARY KEY;

@@ -1,5 +1,7 @@
 package com.ecosystem.dto.buyer;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,10 +29,17 @@ public class ProductResponse {
     private Integer reviewsCount;
     private String category;
     private List<String> tags;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
+    
     private BigDecimal historicalLowPrice;
     private BigDecimal lastTransactionPrice;
+    
+    @JsonIgnore // 前端不需要这个字段
     private Boolean inWishlist; // 是否在愿望清单中（前端不需要，但后端使用）
 }
 

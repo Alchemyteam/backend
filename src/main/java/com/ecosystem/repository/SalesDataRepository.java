@@ -12,10 +12,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
-public interface SalesDataRepository extends JpaRepository<SalesData, String> {
+public interface SalesDataRepository extends JpaRepository<SalesData, Long> {
     
     // Filter by category and sort by transaction date (using native SQL, explicitly specifying column names)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -25,7 +25,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     Page<SalesData> findByCategoryOrderByTxDateDesc(@Param("category") String category, Pageable pageable);
     
     // Filter by category and sort by price ascending (using native SQL, explicitly specifying column names)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -35,7 +35,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     Page<SalesData> findByCategoryOrderByTxP1Asc(@Param("category") String category, Pageable pageable);
     
     // Filter by category and sort by price descending (using native SQL, explicitly specifying column names)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -45,7 +45,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     Page<SalesData> findByCategoryOrderByTxP1Desc(@Param("category") String category, Pageable pageable);
     
     // Sort by transaction date (using native SQL, explicitly specifying column names)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data ORDER BY STR_TO_DATE(`TXDate`, '%Y-%m-%d') DESC", 
@@ -53,7 +53,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     Page<SalesData> findAllByOrderByTxDateDesc(Pageable pageable);
     
     // Sort by price ascending (using native SQL, explicitly specifying column names)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data ORDER BY CAST(`TXP1` AS DECIMAL(10,2)) ASC", 
@@ -61,7 +61,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     Page<SalesData> findAllByOrderByTxP1Asc(Pageable pageable);
     
     // Sort by price descending (using native SQL, explicitly specifying column names)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data ORDER BY CAST(`TXP1` AS DECIMAL(10,2)) DESC", 
@@ -69,7 +69,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     Page<SalesData> findAllByOrderByTxP1Desc(Pageable pageable);
     
     // Search by product name (using native SQL)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -84,7 +84,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     // ==================== Material Search Methods ====================
     
     // 1. Exact search by material code
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -94,7 +94,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     List<SalesData> findByItemCode(@Param("itemCode") String itemCode);
     
     // 2. Fuzzy search by material name keyword (supports multiple keywords separated by spaces)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -106,7 +106,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     List<SalesData> searchByItemNameKeyword(@Param("keyword") String keyword, @Param("limit") int limit);
     
     // 3. Search by category (Product Hierarchy 3, case-insensitive matching with space handling)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -117,7 +117,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     List<SalesData> findByProductHierarchy3(@Param("productHierarchy3") String productHierarchy3, @Param("limit") int limit);
     
     // 4. Search by function (Function, case-insensitive matching)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -128,7 +128,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     List<SalesData> findByFunction(@Param("function") String function, @Param("limit") int limit);
     
     // 5. Search by brand (Brand Code)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -139,7 +139,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     List<SalesData> findByBrandCode(@Param("brandCode") String brandCode, @Param("limit") int limit);
     
     // 6. Combined criteria search (supports Unit Cost and TXP1 price fields, fuzzy matching for buyer name and category)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -171,7 +171,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     );
     
     // 7. Full-text search (search in all relevant fields)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -193,7 +193,7 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
     List<SalesData> fullTextSearch(@Param("keyword") String keyword, @Param("limit") int limit);
     
     // 8. Complete filter query (supports all filter conditions)
-    @Query(value = "SELECT `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
            "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
            "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
            "FROM ecoschema.sales_data " +
@@ -334,5 +334,29 @@ public interface SalesDataRepository extends JpaRepository<SalesData, String> {
            "ORDER BY `Product Hierarchy 3` ASC",
            nativeQuery = true)
     List<String> findDistinctCategories();
+    
+    // Get product detail by ItemCode (get first record for basic info, for backward compatibility)
+    @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, " +
+           "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, " +
+           "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` " +
+           "FROM ecoschema.sales_data " +
+           "WHERE `ItemCode` = :itemCode " +
+           "ORDER BY STR_TO_DATE(`TXDate`, '%Y-%m-%d') DESC " +
+           "LIMIT 1",
+           nativeQuery = true)
+    SalesData findFirstByItemCode(@Param("itemCode") String itemCode);
+    
+    // Get price statistics for a product by ItemCode (min, max, latest price)
+    @Query(value = "SELECT " +
+           "COALESCE(MIN(CAST(`TXP1` AS DECIMAL(10,2))), 0) as minPrice, " +
+           "COALESCE(MAX(CAST(`TXP1` AS DECIMAL(10,2))), 0) as maxPrice, " +
+           "COALESCE((SELECT CAST(`TXP1` AS DECIMAL(10,2)) FROM ecoschema.sales_data " +
+           " WHERE `ItemCode` = :itemCode AND `TXP1` IS NOT NULL AND `TXP1` != '' AND TRIM(`TXP1`) != '' " +
+           " ORDER BY STR_TO_DATE(`TXDate`, '%Y-%m-%d') DESC LIMIT 1), 0) as latestPrice " +
+           "FROM ecoschema.sales_data " +
+           "WHERE `ItemCode` = :itemCode AND `TXP1` IS NOT NULL AND `TXP1` != '' AND TRIM(`TXP1`) != '' " +
+           "LIMIT 1",
+           nativeQuery = true)
+    Object[] getPriceStatisticsByItemCode(@Param("itemCode") String itemCode);
 }
 
