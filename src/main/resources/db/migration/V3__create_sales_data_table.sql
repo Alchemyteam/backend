@@ -1,12 +1,14 @@
 -- ============================================
--- V9: Create sales data table
+-- V3: Create sales_data table
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS sales_data (
-    `TXNo` VARCHAR(255) NOT NULL PRIMARY KEY COMMENT 'Transaction number',
+CREATE TABLE IF NOT EXISTS ecoschema.sales_data (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT 'Sales data ID (auto-increment)',
+    `TXNo` VARCHAR(255) DEFAULT NULL COMMENT 'Transaction number',
     `TXDate` VARCHAR(255) DEFAULT NULL COMMENT 'Transaction date',
     `TXQty` VARCHAR(255) DEFAULT NULL COMMENT 'Transaction quantity',
     `TXP1` VARCHAR(255) DEFAULT NULL COMMENT 'Transaction price 1',
+    `TXP2` VARCHAR(255) DEFAULT NULL COMMENT 'Transaction price 2',
     `BuyerCode` VARCHAR(255) DEFAULT NULL COMMENT 'Buyer code',
     `BuyerName` VARCHAR(255) DEFAULT NULL COMMENT 'Buyer name',
     `ItemCode` VARCHAR(255) DEFAULT NULL COMMENT 'Item code',
@@ -19,6 +21,8 @@ CREATE TABLE IF NOT EXISTS sales_data (
     `Performance.1` VARCHAR(255) DEFAULT NULL COMMENT 'Performance 1',
     `Material` VARCHAR(255) DEFAULT NULL COMMENT 'Material',
     `UOM` VARCHAR(255) DEFAULT NULL COMMENT 'Unit of measure',
+    `Bundled` VARCHAR(255) DEFAULT NULL COMMENT 'Bundled',
+    `Origin` VARCHAR(255) DEFAULT NULL COMMENT 'Origin',
     `Brand Code` VARCHAR(255) DEFAULT NULL COMMENT 'Brand code',
     `Unit Cost` VARCHAR(255) DEFAULT NULL COMMENT 'Unit cost',
     `Sector` VARCHAR(255) DEFAULT NULL COMMENT 'Sector',

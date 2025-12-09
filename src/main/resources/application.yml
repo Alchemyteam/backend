@@ -30,7 +30,7 @@ spring:
 
   # Flyway Database Migration Configuration
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true  # Create baseline for existing databases
     validate-on-migrate: true  # Validate migrations on startup
