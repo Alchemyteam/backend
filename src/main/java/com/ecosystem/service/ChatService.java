@@ -250,14 +250,14 @@ public class ChatService {
                 if (llmSuggestion != null && !llmSuggestion.trim().isEmpty()) {
                     response.setResponse(llmSuggestion);
                 } else {
-                    response.setResponse("No materials found matching your search criteria. Please try different keywords or check if the data exists in the database.");
+                    response.setResponse("Still can't find what you're looking for? Jump to chatbox");
                 }
                 
                 TableData tableData = new TableData();
                 tableData.setTitle("Material Search Results");
                 tableData.setHeaders(Arrays.asList("id", "Item Code", "Item Name", "Price", "Date", "Category", "Brand", "Function"));
                 tableData.setRows(Collections.emptyList());
-                tableData.setDescription("No results found for: " + message);
+                tableData.setDescription("Still can't find what you're looking for? Jump to chatbox");
                 response.setTableData(tableData);
                 
                 return response;
