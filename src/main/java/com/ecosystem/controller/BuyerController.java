@@ -2,6 +2,9 @@ package com.ecosystem.controller;
 
 import com.ecosystem.dto.ErrorResponse;
 import com.ecosystem.dto.buyer.*;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import com.ecosystem.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -269,6 +272,29 @@ public class BuyerController {
     public ResponseEntity<List<String>> getSalesDataCategories(Authentication authentication) {
         List<String> categories = salesDataService.getCategories();
         return ResponseEntity.ok(categories);
+    }
+
+    @PostMapping("/sales-data/bulk-import")
+    public ResponseEntity<BulkImportResponse> bulkImportSalesData(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            Authentication authentication) {
+        BulkImportResponse response = salesDataService.bulkImportFromExcel(file);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/sales-data/template")
+    public ResponseEntity<Resource> downloadTemplate(Authentication authentication) {
+        try {
+            Resource resource = salesDataService.generateExcelTemplate();
+            String fileName = salesDataService.getTemplateFileName();
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate template: " + e.getMessage(), e);
+        }
     }
 }
 
