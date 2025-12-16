@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/login", "/auth/register", "/auth/verify").permitAll()
                         .requestMatchers("/chat/health").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/admin/embedding/**").permitAll()  // 允许 embedding 端点（开发环境，生产环境应改为 authenticated）
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))

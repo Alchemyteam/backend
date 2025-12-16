@@ -657,51 +657,61 @@ public class LLMSearchParser {
      */
     private String buildParsingPrompt(String userQuery) {
         return "你是一位专业的建筑材料和工程设备领域的专家。你的任务是从用户的自然语言查询中提取关键信息，然后从数据库中搜索相关的所有数据。\n\n" +
-               "用户查询: \"" + userQuery + "\"\n\n" +
-               "**重要：你必须从用户的查询中提取关键词，不要直接返回空结果！**\n\n" +
-               "数据库包含以下字段，你可以使用这些字段来搜索：\n" +
-               "- ItemCode: 物料编码（精确匹配，如 TI00040）\n" +
-               "- ItemName: 物料名称（模糊搜索，如 \"Safety Shoes\"、\"安全鞋\"）\n" +
-               "- BuyerName: 买家公司名称（如 \"AIR LIQUIDE SINGAPORE PRIVATE LIMITED\"）\n" +
-               "- BuyerCode: 买家代码\n" +
-               "- Product Hierarchy 3: 产品分类（如 \"Site Safety Equipment\"、\"Electrical Accessories\"、\"Filters\"、\"Maintenance Chemicals\"、\"Cutting Tool\"）\n" +
-               "- Function: 功能分类（如 \"Maintenance Chemicals\"、\"Cutting Tool\"）\n" +
-               "- Brand Code: 品牌代码（如 \"AIR LIQUIDE\"、\"AET\"、\"FLUKE\"）\n" +
-               "- Unit Cost / TXP1: 价格（单位成本或交易价格）\n" +
-               "- TXDate: 交易日期\n\n" +
-               "**关键词提取示例：**\n" +
-               "1. \"Show all products from AET\" → 提取 \"AET\" → brandCode: \"AET\"\n" +
-               "2. \"Find Safety Shoes\" → 提取 \"Safety Shoes\" → itemNameKeyword: \"Safety Shoes\"\n" +
-               "3. \"Show me Site Safety Equipment\" → 提取 \"Site Safety Equipment\" → productHierarchy3: \"Site Safety Equipment\"\n" +
-               "4. \"Products by AIR LIQUIDE\" → 提取 \"AIR LIQUIDE\" → brandCode: \"AIR LIQUIDE\"\n" +
-               "5. \"Show items from AIR LIQUIDE SINGAPORE PRIVATE LIMITED\" → 提取公司名称 → buyerName: \"AIR LIQUIDE SINGAPORE PRIVATE LIMITED\"\n" +
-               "6. \"Find TI00040\" → 提取物料编码 → itemCode: \"TI00040\"\n" +
-               "7. \"Show all Maintenance Chemicals\" → 提取 \"Maintenance Chemicals\" → function: \"Maintenance Chemicals\"\n\n" +
-               "请仔细分析用户的查询，提取所有可能的关键词，然后返回一个 JSON 对象，包含你认为最合适的搜索条件。\n\n" +
-               "返回格式（必须是有效的 JSON，不要包含其他文字或 Markdown 格式）：\n" +
+               "User query: \"" + userQuery + "\"\n\n" +
+               "**IMPORTANT: You must extract keywords from the user's query, do not return all null fields!**\n\n" +
+               "The database contains the following fields for searching:\n" +
+               "- ItemCode: Material code (exact match, e.g., TI00040)\n" +
+               "- ItemName: Material name (fuzzy search, e.g., \"Safety Shoes\")\n" +
+               "- BuyerName: Buyer company name (e.g., \"AIR LIQUIDE SINGAPORE PRIVATE LIMITED\")\n" +
+               "- BuyerCode: Buyer code\n" +
+               "- Product Hierarchy 3: Product category (e.g., \"Site Safety Equipment\", \"Electrical Accessories\", \"Filters\", \"Maintenance Chemicals\", \"Cutting Tool\")\n" +
+               "- Function: Function category (e.g., \"Maintenance Chemicals\", \"Cutting Tool\")\n" +
+               "- Brand Code: Brand code (e.g., \"AIR LIQUIDE\", \"AET\", \"FLUKE\")\n" +
+               "- Unit Cost / TXP1: Price (unit cost or transaction price)\n" +
+               "- TXDate: Transaction date (format: YYYY-MM-DD)\n\n" +
+               "**For historical order queries, pay special attention to:**\n" +
+               "- Date keywords: \"from 2024\", \"in 2023\", \"last year\", \"this year\", \"January 2024\", \"2024-01-01 to 2024-12-31\"\n" +
+               "- Order/Transaction keywords: \"orders\", \"transactions\", \"purchases\", \"sales\", \"history\", \"historical\"\n" +
+               "- Buyer keywords: \"from [company name]\", \"by [company name]\", \"buyer [company name]\"\n\n" +
+               "**Keyword extraction examples:**\n" +
+               "1. \"Show all products from AET\" → extract \"AET\" → brandCode: \"AET\"\n" +
+               "2. \"Find Safety Shoes\" → extract \"Safety Shoes\" → itemNameKeyword: \"Safety Shoes\"\n" +
+               "3. \"Show me Site Safety Equipment\" → extract \"Site Safety Equipment\" → productHierarchy3: \"Site Safety Equipment\"\n" +
+               "4. \"Products by AIR LIQUIDE\" → extract \"AIR LIQUIDE\" → brandCode: \"AIR LIQUIDE\"\n" +
+               "5. \"Show items from AIR LIQUIDE SINGAPORE PRIVATE LIMITED\" → extract company name → buyerName: \"AIR LIQUIDE SINGAPORE PRIVATE LIMITED\"\n" +
+               "6. \"Find TI00040\" → extract material code → itemCode: \"TI00040\"\n" +
+               "7. \"Show all Maintenance Chemicals\" → extract \"Maintenance Chemicals\" → function: \"Maintenance Chemicals\"\n" +
+               "8. \"Show orders from 2024\" → extract date → startDate: \"2024-01-01\", endDate: \"2024-12-31\"\n" +
+               "9. \"AIR LIQUIDE orders in 2023\" → extract buyer and date → buyerName: \"AIR LIQUIDE\", startDate: \"2023-01-01\", endDate: \"2023-12-31\"\n" +
+               "10. \"Historical orders for safety equipment\" → extract product → itemNameKeyword: \"safety equipment\"\n" +
+               "11. \"Show transactions from January to March 2024\" → extract date range → startDate: \"2024-01-01\", endDate: \"2024-03-31\"\n\n" +
+               "Please carefully analyze the user's query, extract all possible keywords, and return a JSON object with the most appropriate search criteria.\n\n" +
+               "Return format (must be valid JSON, do not include other text or Markdown):\n" +
                "{\n" +
-               "  \"itemCode\": \"精确的物料编码（如果查询中提到了，如 TI00040），否则为 null\",\n" +
-               "  \"itemNameKeyword\": \"物料名称关键词（用于模糊搜索，如 \"Safety Shoes\"、\"安全鞋\"），如果查询包含产品名称，提取关键词，否则为 null\",\n" +
-               "  \"productHierarchy3\": \"产品分类名称（如 \"Site Safety Equipment\"、\"Electrical Accessories\"），如果查询提到了分类，否则为 null\",\n" +
-               "  \"function\": \"功能分类（如 \"Maintenance Chemicals\"、\"Cutting Tool\"），如果查询提到了功能，否则为 null\",\n" +
-               "  \"brandCode\": \"品牌代码（如 \"AIR LIQUIDE\"、\"AET\"、\"FLUKE\"），如果查询提到了品牌（如 \"from AET\"、\"by AIR LIQUIDE\"、\"products from AET\"），提取品牌名称，否则为 null\",\n" +
-               "  \"buyerName\": \"买家公司名称（如 \"AIR LIQUIDE SINGAPORE PRIVATE LIMITED\"），如果查询提到了公司名称，否则为 null\",\n" +
-               "  \"buyerCode\": \"买家代码，如果查询提到了，否则为 null\",\n" +
-               "  \"minPrice\": 最低价格（数字，如果查询提到了价格范围，否则为 null）,\n" +
-               "  \"maxPrice\": 最高价格（数字，如果查询提到了价格范围，否则为 null）,\n" +
-               "  \"startDate\": \"开始日期（YYYY-MM-DD 格式，如果查询提到了日期范围，否则为 null）\",\n" +
-               "  \"endDate\": \"结束日期（YYYY-MM-DD 格式，如果查询提到了日期范围，否则为 null）\"\n" +
+               "  \"itemCode\": \"Exact material code (if mentioned in query, e.g., TI00040), otherwise null\",\n" +
+               "  \"itemNameKeyword\": \"Material name keyword (for fuzzy search, e.g., \"Safety Shoes\"), if query contains product name, extract keyword, otherwise null\",\n" +
+               "  \"productHierarchy3\": \"Product category name (e.g., \"Site Safety Equipment\", \"Electrical Accessories\"), if query mentions category, otherwise null\",\n" +
+               "  \"function\": \"Function category (e.g., \"Maintenance Chemicals\", \"Cutting Tool\"), if query mentions function, otherwise null\",\n" +
+               "  \"brandCode\": \"Brand code (e.g., \"AIR LIQUIDE\", \"AET\", \"FLUKE\"), if query mentions brand (e.g., \"from AET\", \"by AIR LIQUIDE\"), extract brand name, otherwise null\",\n" +
+               "  \"buyerName\": \"Buyer company name (e.g., \"AIR LIQUIDE SINGAPORE PRIVATE LIMITED\"), if query mentions company name, otherwise null\",\n" +
+               "  \"buyerCode\": \"Buyer code, if mentioned in query, otherwise null\",\n" +
+               "  \"minPrice\": Minimum price (number, if query mentions price range, otherwise null),\n" +
+               "  \"maxPrice\": Maximum price (number, if query mentions price range, otherwise null),\n" +
+               "  \"startDate\": \"Start date (YYYY-MM-DD format, if query mentions date range like \"from 2024\", \"in 2023\", \"last year\", \"January 2024\", convert to YYYY-MM-DD, otherwise null)\",\n" +
+               "  \"endDate\": \"End date (YYYY-MM-DD format, if query mentions date range, convert to YYYY-MM-DD, otherwise null)\"\n" +
                "}\n\n" +
-               "**关键提取规则：**\n" +
-               "1. **品牌识别**：如果查询包含 \"from X\"、\"by X\"、\"products from X\"、\"items from X\"，其中 X 是品牌名称（如 AET、AIR LIQUIDE），提取 X 并设置 brandCode\n" +
-               "2. **产品名称**：如果查询包含产品名称（如 \"Safety Shoes\"、\"安全鞋\"），提取并设置 itemNameKeyword\n" +
-               "3. **分类识别**：如果查询包含产品分类（如 \"Site Safety Equipment\"、\"Electrical Accessories\"），设置 productHierarchy3\n" +
-               "4. **功能识别**：如果查询包含功能分类（如 \"Maintenance Chemicals\"、\"Cutting Tool\"），设置 function\n" +
-               "5. **公司名称**：如果查询包含公司名称（包含 LIMITED、PRIVATE、COMPANY 等词），设置 buyerName\n" +
-               "6. **物料编码**：如果查询包含物料编码格式（如 TI00040），设置 itemCode\n" +
-               "7. **必须提取关键词**：即使查询是自然语言（如 \"Show all products from AET\"），也要提取 \"AET\" 并设置 brandCode，不要返回所有字段都是 null！\n" +
-               "8. 只返回有效的 JSON，不要包含任何其他文字、说明或 Markdown 格式\n" +
-               "9. 如果某个字段没有值，设置为 null（不要省略字段）";
+               "**Key extraction rules:**\n" +
+               "1. **Brand identification**: If query contains \"from X\", \"by X\", \"products from X\", \"items from X\", where X is a brand name (e.g., AET, AIR LIQUIDE), extract X and set brandCode\n" +
+               "2. **Product name**: If query contains product name (e.g., \"Safety Shoes\"), extract and set itemNameKeyword\n" +
+               "3. **Category identification**: If query contains product category (e.g., \"Site Safety Equipment\", \"Electrical Accessories\"), set productHierarchy3\n" +
+               "4. **Function identification**: If query contains function category (e.g., \"Maintenance Chemicals\", \"Cutting Tool\"), set function\n" +
+               "5. **Company name**: If query contains company name (contains LIMITED, PRIVATE, COMPANY, etc.), set buyerName\n" +
+               "6. **Material code**: If query contains material code format (e.g., TI00040), set itemCode\n" +
+               "7. **Date extraction**: If query contains date keywords like \"from 2024\", \"in 2023\", \"last year\", \"this year\", \"January 2024\", \"2024-01-01 to 2024-12-31\", extract and convert to YYYY-MM-DD format for startDate/endDate\n" +
+               "8. **Order/Transaction keywords**: If query contains \"orders\", \"transactions\", \"purchases\", \"sales\", \"history\", \"historical\", treat it as a historical order query and extract date/buyer/product information\n" +
+               "9. **Must extract keywords**: Even if query is natural language (e.g., \"Show all products from AET\"), extract \"AET\" and set brandCode, do not return all fields as null!\n" +
+               "10. Return only valid JSON, do not include any other text, explanations, or Markdown format\n" +
+               "11. If a field has no value, set it to null (do not omit the field)";
     }
     
     /**

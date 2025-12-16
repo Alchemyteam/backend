@@ -274,11 +274,12 @@ public interface SalesDataRepository extends JpaRepository<SalesData, Long> {
                      @Param("limit") int limit);
 
        // 7. Full-text search (search in all relevant fields)
-       @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `TXP2`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, "
+       // Note: Removed TXP2, Bundled, Origin as they don't exist in the database table
+       @Query(value = "SELECT id, `TXNo`, `TXDate`, `TXQty`, `TXP1`, `BuyerCode`, `BuyerName`, `ItemCode`, `ItemName`, "
                      +
                      "`Product Hierarchy 3`, `Function`, `ItemType`, `Model`, `Performance`, `Performance.1`, `Material`, "
                      +
-                     "`UOM`, `Bundled`, `Origin`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` "
+                     "`UOM`, `Brand Code`, `Unit Cost`, `Sector`, `SubSector`, `Value`, `Rationale`, `www`, `Source` "
                      +
                      "FROM ecoschema.sales_data " +
                      "WHERE LOWER(`ItemName`) LIKE LOWER(CONCAT('%', :keyword, '%')) " +

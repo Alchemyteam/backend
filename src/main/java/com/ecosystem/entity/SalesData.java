@@ -99,4 +99,12 @@ public class SalesData {
 
     @Column(name = "Source", length = 255)
     private String source;
+
+    // Note: embedding_text and embedding_hash are only in product_master table, not in sales_data
+    // Mark as @Transient to avoid Hibernate trying to read them from sales_data table
+    @Transient
+    private String embeddingText;
+
+    @Transient
+    private String embeddingHash;
 }

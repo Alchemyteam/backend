@@ -1,0 +1,67 @@
+# Historical Order Query Examples (English Only)
+
+## Date Range Queries
+show orders from 2024
+orders in 2023
+transactions from January 2024 to March 2024
+sales data from 2024-01-01 to 2024-12-31
+historical orders last year
+orders this year
+show all transactions from 2024
+purchases in 2023
+
+## Buyer Name Queries
+orders from AIR LIQUIDE SINGAPORE PRIVATE LIMITED
+show transactions for AIR LIQUIDE
+buyer AIR LIQUIDE orders
+purchases by AIR LIQUIDE SINGAPORE PRIVATE LIMITED
+show orders from AIR LIQUIDE
+AIR LIQUIDE transactions
+
+## Buyer Code Queries
+orders for buyer code ABC123
+transactions with buyer code XYZ
+show orders buyer code 12345
+
+## Transaction Number Queries
+show transaction TX12345
+order number TX12345
+find transaction TX12345
+show TX12345
+
+## Combined: Date + Buyer
+orders from AIR LIQUIDE in 2024
+transactions for AIR LIQUIDE from January to March 2024
+show AIR LIQUIDE orders last year
+AIR LIQUIDE purchases in 2023
+show AIR LIQUIDE orders from 2024
+
+## Combined: Date + Product
+safety equipment orders in 2024
+steel pipe transactions from 2023
+show safety helmet orders from last year
+safety equipment purchases in 2024
+
+## Combined: Buyer + Product
+AIR LIQUIDE safety equipment orders
+show AIR LIQUIDE steel pipe purchases
+AIR LIQUIDE safety helmet transactions
+
+## Combined: Date + Buyer + Product
+AIR LIQUIDE safety equipment orders in 2024
+show AIR LIQUIDE steel pipe transactions from 2023
+AIR LIQUIDE safety helmet orders from last year
+
+## Item Code with History
+TI00040
+show history for TI00040
+historical transactions for item code TI00040
+TI00040 all orders
+TI00040 transaction history
+
+## Complex Queries
+show all safety equipment orders from AIR LIQUIDE in 2024
+find steel pipe transactions for AIR LIQUIDE from January to March 2024
+show historical orders for safety equipment from last year
+AIR LIQUIDE safety equipment purchases in 2023
+

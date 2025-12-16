@@ -59,6 +59,22 @@ cors:
 llm:
   api:
     url: https://generativelanguage.googleapis.com/v1beta  # Google Gemini API 基础地址
-    key: AIzaSyA5281bkBTVre-wwALoWx6Kr3incLfVjZs  # Google AI Studio API Key
+    key: AIzaSyAP0HYbraGzItHM6nbLx7ScF81Y4rpycIA  # Google AI Studio API Key
   model: gemini-2.5-flash  # 使用的模型：gemini-1.5-flash (推荐), gemini-1.5-pro, gemini-pro (已弃用)
+
+# Cohere Embedding 配置
+cohere:
+  api:
+    key: TkJzyl54FxsHHJMofi4bBivdSya86DnEzw9DJXJE  # 请替换为你的 Cohere API Key
+    model: embed-english-v3.0  # Cohere embedding 模型（embed-english-v3.0, embed-multilingual-v3.0 等）
+    input-type: search_document  # 输入类型：search_document, search_query, classification, clustering
+  enabled: true  # 是否启用 Cohere（设为 false 可暂时禁用）
+
+# Qdrant 向量数据库配置
+qdrant:
+  host: localhost  # Qdrant 服务器地址
+  port: 6333  # Qdrant 服务器端口
+  collection: sales_data_vectors  # 集合名称
+  vector-size: 1024  # 向量维度（Cohere embed-english-v3.0 默认是 1024 维）
+  enabled: true  # 是否启用 Qdrant（设为 false 可暂时禁用）
 

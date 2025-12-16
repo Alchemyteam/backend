@@ -3,8 +3,10 @@ package com.ecosystem.service;
 import com.ecosystem.dto.chat.*;
 import com.ecosystem.entity.Product;
 import com.ecosystem.entity.SalesData;
+import com.ecosystem.entity.ProductMaster;
 import com.ecosystem.repository.ProductRepository;
 import com.ecosystem.repository.SalesDataRepository;
+import com.ecosystem.repository.ProductMasterRepository;
 import com.ecosystem.service.MaterialSearchService;
 import com.ecosystem.service.LLMSearchParser;
 import com.ecosystem.dto.chat.MaterialSearchCriteria;
@@ -29,6 +31,9 @@ public class ChatService {
     private final MaterialSearchService materialSearchService;
     private final LLMSearchParser llmSearchParser;
     private final RestTemplate restTemplate;
+    private final CohereEmbeddingService cohereEmbeddingService;
+    private final QdrantService qdrantService;
+    private final ProductMasterRepository productMasterRepository;
 
     @Value("${llm.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String llmApiUrl;
@@ -216,16 +221,20 @@ public class ChatService {
     private ChatResponse handleSearchProducts(String message) {
         log.info("Handling search products request: {}", message);
         
-        // 使用新的物料搜索功能
+        // 1. 先进行向量搜索（语义搜索）
+        List<ProductMaster> vectorSearchResults = performVectorSearch(message, 10);
+        log.info("Vector search found {} similar products", vectorSearchResults.size());
+        
+        // 2. 使用传统的物料搜索功能（精确匹配）
         MaterialSearchCriteria criteria = llmSearchParser.parseSearchQuery(message);
         log.info("Parsed search criteria: {}", criteria);
         
         List<SalesData> salesDataList = materialSearchService.searchMaterials(criteria);
-        log.info("Found {} sales data records", salesDataList.size());
+        log.info("Found {} sales data records from traditional search", salesDataList.size());
         
-        // 如果搜索无结果，使用 LLM 作为专家重新理解查询并尝试搜索
+        // 如果传统搜索无结果，使用 LLM 作为专家重新理解查询并尝试搜索
         if (salesDataList.isEmpty()) {
-            log.info("No results found, asking LLM expert to help find related data");
+            log.info("No results from traditional search, asking LLM expert to help find related data");
             
             // 让 LLM 作为建筑领域专家，重新理解用户意图并生成搜索策略
             MaterialSearchCriteria llmCriteria = llmSearchParser.parseSearchQueryWithLLM(message);
@@ -238,9 +247,21 @@ public class ChatService {
                 log.info("LLM expert search found {} results", salesDataList.size());
             }
             
-            // 如果仍然无结果，让大模型思考一下，提供建议或解释
-            if (salesDataList.isEmpty()) {
-                log.info("Still no results found, asking LLM to think about why and provide suggestions");
+            // 如果传统搜索仍然无结果，但向量搜索有结果，使用向量搜索结果
+            if (salesDataList.isEmpty() && !vectorSearchResults.isEmpty()) {
+                log.info("Traditional search failed, but vector search found {} products. Using vector search results.", 
+                        vectorSearchResults.size());
+                // 将向量搜索结果转换为 SalesData 格式
+                for (ProductMaster productMaster : vectorSearchResults) {
+                    SalesData salesData = convertProductMasterToSalesData(productMaster);
+                    salesDataList.add(salesData);
+                }
+                log.info("Converted {} vector search results to SalesData format", salesDataList.size());
+            }
+            
+            // 如果传统搜索和向量搜索都无结果，让大模型思考一下，提供建议或解释
+            if (salesDataList.isEmpty() && vectorSearchResults.isEmpty()) {
+                log.info("Both traditional and vector search failed, asking LLM to think about why and provide suggestions");
                 
                 String llmSuggestion = askLLMForSearchSuggestion(message, criteria, llmCriteria);
                 
@@ -302,7 +323,30 @@ public class ChatService {
         tableData.setRows(rows);
         tableData.setDescription("Found " + salesDataList.size() + " material record(s).");
         
-        // 如果是精确物料编码搜索，获取历史统计
+        // 3. 合并向量搜索结果和传统搜索结果（如果传统搜索有结果）
+        // 将向量搜索结果转换为 SalesData 格式（如果还没有在传统搜索结果中）
+        if (!salesDataList.isEmpty() && !vectorSearchResults.isEmpty()) {
+            Set<String> existingItemCodes = salesDataList.stream()
+                    .map(SalesData::getItemCode)
+                    .filter(code -> code != null)
+                    .collect(Collectors.toSet());
+            
+            // 从向量搜索结果中添加新的产品（去重）
+            for (ProductMaster productMaster : vectorSearchResults) {
+                if (productMaster.getItemCode() != null && 
+                    !existingItemCodes.contains(productMaster.getItemCode())) {
+                    // 转换为 SalesData 格式（简化版）
+                    SalesData salesData = convertProductMasterToSalesData(productMaster);
+                    salesDataList.add(salesData);
+                }
+            }
+            log.info("Merged results: {} traditional + {} vector = {} total", 
+                    salesDataList.size() - vectorSearchResults.size(), 
+                    vectorSearchResults.size(), 
+                    salesDataList.size());
+        }
+        
+        // 4. 使用 LLM 基于搜索结果生成智能回答
         String responseText;
         if (criteria.hasItemCode() && salesDataList.size() > 0) {
             MaterialSearchService.MaterialHistoryStats stats = materialSearchService.getMaterialHistory(criteria.getItemCode());
@@ -321,10 +365,10 @@ public class ChatService {
                     stats.getLastTransactionDate() != null ? stats.getLastTransactionDate().toString() : "N/A"
                 );
             } else {
-                responseText = "Found " + salesDataList.size() + " material record(s) matching your search.";
+                responseText = generateAIResponseFromSearchResults(message, salesDataList, vectorSearchResults);
             }
         } else {
-            responseText = "Found " + salesDataList.size() + " material record(s) matching your search.";
+            responseText = generateAIResponseFromSearchResults(message, salesDataList, vectorSearchResults);
         }
         
         ChatResponse response = new ChatResponse();
@@ -415,7 +459,11 @@ public class ChatService {
     }
 
     private ChatResponse handleGeneralQuery(String message) {
-        // 尝试提取产品关键词，即使是一般查询
+        // 1. 先进行向量搜索（语义搜索）
+        List<ProductMaster> vectorSearchResults = performVectorSearch(message, 5);
+        log.info("Vector search found {} similar products for general query", vectorSearchResults.size());
+        
+        // 2. 尝试提取产品关键词，即使是一般查询
         String productKeyword = extractProductKeyword(message);
         List<Product> products = Collections.emptyList();
         
@@ -423,19 +471,48 @@ public class ChatService {
             products = searchProductsByKeyword(productKeyword);
         }
         
+        // 3. 使用 LLM 基于向量搜索结果生成智能回答
         String llmResponse;
         try {
-            llmResponse = callLLM(generateGeneralPrompt(message));
+            llmResponse = generateAIResponseFromSearchResults(message, 
+                    Collections.emptyList(), vectorSearchResults);
+            if (llmResponse == null || llmResponse.trim().isEmpty()) {
+                llmResponse = callLLM(generateGeneralPrompt(message));
+            }
         } catch (Exception e) {
             log.warn("LLM call failed, using default response", e);
-            llmResponse = "I understand your request. How can I help you with our construction materials?";
+            if (vectorSearchResults.isEmpty()) {
+                llmResponse = "I understand your request. How can I help you with our construction materials?";
+            } else {
+                llmResponse = "I found " + vectorSearchResults.size() + 
+                        " related product(s) based on your query. Here are the results:";
+            }
         }
         
         ChatResponse response = new ChatResponse();
         response.setResponse(llmResponse);
         
-        // 如果找到产品，也返回表格数据
-        if (!products.isEmpty()) {
+        // 4. 如果找到产品，也返回表格数据（优先使用向量搜索结果）
+        if (!vectorSearchResults.isEmpty()) {
+            TableData tableData = new TableData();
+            tableData.setTitle("Related Products (AI Search)");
+            tableData.setHeaders(Arrays.asList("Item Code", "Item Name", "Model", "Material", "Brand", "Category"));
+            tableData.setRows(vectorSearchResults.stream()
+                .map(pm -> {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("Item Code", pm.getItemCode() != null ? pm.getItemCode() : "N/A");
+                    row.put("Item Name", pm.getItemName() != null ? pm.getItemName() : "N/A");
+                    row.put("Model", pm.getModel() != null ? pm.getModel() : "N/A");
+                    row.put("Material", pm.getMaterial() != null ? pm.getMaterial() : "N/A");
+                    row.put("Brand", pm.getBrandCode() != null ? pm.getBrandCode() : "N/A");
+                    row.put("Category", pm.getProductHierarchy3() != null ? pm.getProductHierarchy3() : "N/A");
+                    return row;
+                })
+                .collect(Collectors.toList()));
+            tableData.setDescription("Found " + vectorSearchResults.size() + 
+                    " related product(s) using AI semantic search.");
+            response.setTableData(tableData);
+        } else if (!products.isEmpty()) {
             TableData tableData = new TableData();
             tableData.setTitle("Related Products");
             tableData.setHeaders(Arrays.asList("Product Name", "Price", "Stock", "Category"));
@@ -604,22 +681,22 @@ public class ChatService {
      * 构建搜索建议提示词
      */
     private String buildSearchSuggestionPrompt(String userQuery, MaterialSearchCriteria initialCriteria, MaterialSearchCriteria llmCriteria) {
-        return "你是一位专业的建筑材料和工程设备领域的专家。用户搜索了以下内容但没有找到任何结果：\n\n" +
-               "用户查询: \"" + userQuery + "\"\n\n" +
-               "初始搜索条件: " + initialCriteria + "\n" +
-               "LLM 专家建议的搜索条件: " + llmCriteria + "\n\n" +
-               "请思考以下问题并给出建议：\n" +
-               "1. 为什么这个搜索可能没有结果？\n" +
-               "2. 用户可能想要搜索什么？\n" +
-               "3. 是否有类似的搜索词或同义词可以尝试？\n" +
-               "4. 数据库中可能有哪些相关的分类或品牌？\n" +
-               "5. 用户应该如何修改查询才能找到结果？\n\n" +
-               "请用友好、专业的语气回复用户，提供具体的建议。如果可能，建议用户尝试：\n" +
-               "- 使用更通用的关键词\n" +
-               "- 检查拼写是否正确\n" +
-               "- 尝试搜索相关的分类或品牌\n" +
-               "- 使用部分关键词而不是完整的产品名称\n\n" +
-               "请用中文回复，回复要简洁明了，不超过 200 字。";
+        return "You are a professional expert in construction materials and engineering equipment. The user searched for the following but found no results:\n\n" +
+               "User query: \"" + userQuery + "\"\n\n" +
+               "Initial search criteria: " + initialCriteria + "\n" +
+               "LLM expert suggested search criteria: " + llmCriteria + "\n\n" +
+               "Please think about the following questions and provide suggestions:\n" +
+               "1. Why might this search have no results?\n" +
+               "2. What might the user be trying to search for?\n" +
+               "3. Are there similar search terms or synonyms to try?\n" +
+               "4. What related categories or brands might be in the database?\n" +
+               "5. How should the user modify their query to find results?\n\n" +
+               "Please provide a friendly and professional response with specific suggestions. If possible, suggest the user try:\n" +
+               "- Using more general keywords\n" +
+               "- Checking if spelling is correct\n" +
+               "- Trying to search for related categories or brands\n" +
+               "- Using partial keywords instead of complete product names\n\n" +
+               "Please respond in English only. Keep the response concise and clear, but provide complete information.";
     }
 
     private String[] extractMultipleKeywords(String message) {
@@ -649,7 +726,7 @@ public class ChatService {
             content.put("role", "user");
             List<Map<String, Object>> parts = new ArrayList<>();
             Map<String, Object> part = new HashMap<>();
-            part.put("text", "You are a helpful assistant for a construction materials e-commerce platform. Provide clear, concise responses.\n\n" + prompt);
+            part.put("text", "You are a helpful assistant for a construction materials e-commerce platform. Provide clear, detailed responses in English only. Always respond in English.\n\n" + prompt);
             parts.add(part);
             content.put("parts", parts);
             contents.add(content);
@@ -658,7 +735,7 @@ public class ChatService {
             // 生成配置
             Map<String, Object> generationConfig = new HashMap<>();
             generationConfig.put("temperature", 0.7);
-            generationConfig.put("maxOutputTokens", 500);
+            generationConfig.put("maxOutputTokens", 2048); // Increased to allow longer responses
             requestBody.put("generationConfig", generationConfig);
             
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
@@ -740,6 +817,136 @@ public class ChatService {
         row.put("Field", field);
         row.put("Value", value != null ? value.toString() : "N/A");
         return row;
+    }
+    
+    /**
+     * 执行向量搜索，基于用户查询找到相似的产品
+     */
+    private List<ProductMaster> performVectorSearch(String query, int topK) {
+        try {
+            // 1. 为查询生成向量
+            List<Float> queryVector = cohereEmbeddingService.generateEmbedding(query);
+            if (queryVector == null || queryVector.isEmpty()) {
+                log.warn("Failed to generate embedding for query: {}", query);
+                return Collections.emptyList();
+            }
+            
+            // 2. 在 Qdrant 中搜索相似向量
+            List<Long> similarIds = qdrantService.searchSimilar(queryVector, topK);
+            if (similarIds == null || similarIds.isEmpty()) {
+                log.info("No similar vectors found for query: {}", query);
+                return Collections.emptyList();
+            }
+            
+            // 3. 根据 hash ID 查找 ProductMaster
+            // 由于我们使用 product_uid 的 hash 作为 Qdrant ID，需要匹配
+            List<ProductMaster> allProducts = productMasterRepository.findWithEmbeddingText();
+            List<ProductMaster> results = new ArrayList<>();
+            
+            // 创建 hash 到 ProductMaster 的映射
+            Map<Long, ProductMaster> hashToProductMap = new HashMap<>();
+            for (ProductMaster pm : allProducts) {
+                if (pm.getProductUid() != null) {
+                    long hash = pm.getProductUid().hashCode();
+                    hash = hash < 0 ? Math.abs(hash) : hash;
+                    hashToProductMap.put(hash, pm);
+                }
+            }
+            
+            // 根据返回的 ID 查找对应的产品
+            for (Long id : similarIds) {
+                ProductMaster pm = hashToProductMap.get(id);
+                if (pm != null) {
+                    results.add(pm);
+                }
+            }
+            
+            log.info("Vector search returned {} products for query: {} (matched {} out of {} IDs)", 
+                    results.size(), query, results.size(), similarIds.size());
+            return results;
+            
+        } catch (Exception e) {
+            log.error("Error performing vector search for query: {}", query, e);
+            return Collections.emptyList();
+        }
+    }
+    
+    /**
+     * 基于搜索结果生成 AI 回答
+     */
+    private String generateAIResponseFromSearchResults(String userQuery, 
+                                                      List<SalesData> salesDataList,
+                                                      List<ProductMaster> vectorResults) {
+        try {
+            // 构建包含搜索结果的提示词
+            StringBuilder prompt = new StringBuilder();
+            prompt.append("User query: \"").append(userQuery).append("\"\n\n");
+            
+            if (!vectorResults.isEmpty()) {
+                prompt.append("Based on AI semantic search, I found the following related products:\n");
+                for (int i = 0; i < Math.min(5, vectorResults.size()); i++) {
+                    ProductMaster pm = vectorResults.get(i);
+                    prompt.append(String.format("%d. %s", i + 1, pm.getItemName() != null ? pm.getItemName() : "N/A"));
+                    if (pm.getModel() != null) {
+                        prompt.append(" (Model: ").append(pm.getModel()).append(")");
+                    }
+                    if (pm.getMaterial() != null) {
+                        prompt.append(" - Material: ").append(pm.getMaterial());
+                    }
+                    prompt.append("\n");
+                }
+            }
+            
+            if (!salesDataList.isEmpty()) {
+                prompt.append("\nThrough precise search, I also found the following matching products:\n");
+                for (int i = 0; i < Math.min(5, salesDataList.size()); i++) {
+                    SalesData sd = salesDataList.get(i);
+                    prompt.append(String.format("%d. %s", i + 1, sd.getItemName() != null ? sd.getItemName() : "N/A"));
+                    if (sd.getModel() != null) {
+                        prompt.append(" (Model: ").append(sd.getModel()).append(")");
+                    }
+                    prompt.append("\n");
+                }
+            }
+            
+            prompt.append("\nPlease provide a helpful and professional response to the user based on the search results above.");
+            prompt.append("If products were found, briefly introduce these products; if not found, provide suggestions.");
+            prompt.append("Keep the response concise and clear, but provide complete information. Use English only.");
+            
+            String aiResponse = callLLM(prompt.toString());
+            if (aiResponse != null && !aiResponse.trim().isEmpty()) {
+                return aiResponse;
+            }
+        } catch (Exception e) {
+            log.error("Error generating AI response from search results", e);
+        }
+        
+        // 如果 LLM 调用失败，返回默认回答
+        // 注意：vectorResults 中的产品可能已经被转换并添加到 salesDataList 中了
+        int totalResults = salesDataList.size();
+        if (totalResults > 0) {
+            return String.format("I found %d related product(s). Here are the search results:", totalResults);
+        } else {
+            return "Sorry, I couldn't find any exact matches. Please try different keywords or provide more information about the product you're looking for.";
+        }
+    }
+    
+    /**
+     * 将 ProductMaster 转换为 SalesData（用于统一返回格式）
+     */
+    private SalesData convertProductMasterToSalesData(ProductMaster productMaster) {
+        SalesData salesData = new SalesData();
+        salesData.setItemCode(productMaster.getItemCode());
+        salesData.setItemName(productMaster.getItemName());
+        salesData.setModel(productMaster.getModel());
+        salesData.setMaterial(productMaster.getMaterial());
+        salesData.setBrandCode(productMaster.getBrandCode());
+        salesData.setUom(productMaster.getUom());
+        salesData.setFunction(productMaster.getFunctionName());
+        salesData.setItemType(productMaster.getItemType());
+        salesData.setProductHierarchy3(productMaster.getProductHierarchy3());
+        // 注意：其他字段可能为 null，因为 ProductMaster 和 SalesData 的字段不完全一致
+        return salesData;
     }
 }
 

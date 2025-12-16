@@ -1,0 +1,78 @@
+# AI Search Test Queries (English Only)
+
+## Product Name Searches
+safety helmet
+protective gloves
+steel pipe
+welding machine
+filter cartridge
+safety shoes
+measuring instrument
+leakage current clamp meter
+concrete formwork
+battery charger
+
+## Material Searches
+steel products
+plastic containers
+rubber materials
+aluminum equipment
+carbon steel pipes
+
+## Function Searches
+safety equipment
+measurement tools
+protective gear
+filtering systems
+maintenance chemicals
+cutting tools
+
+## Brand Searches
+FLUKE products
+AET brand items
+Air Liquide equipment
+brand AET safety equipment
+
+## Category Searches
+Site Safety Equipment
+Filters category
+Maintenance Chemicals
+Construction Materials
+Safety Products
+
+## Combination Searches
+safety helmet with visor
+steel pipe for construction
+protective gloves for welding
+filter for water treatment
+safety equipment for construction site
+
+## Question Format
+what safety equipment do you have
+show me protective gear
+find measurement instruments
+I need safety shoes
+looking for steel pipes
+search for welding equipment
+
+## Descriptive Searches
+high quality safety helmet
+durable protective gloves
+industrial steel pipes
+professional measuring tools
+heavy duty filter systems
+
+## Specific Product Searches
+LEAKAGE CURRENT CLAMP METER
+FLUKE 368 FC
+safety helmet with chin strap
+steel formwork panels
+concrete mixing equipment
+
+## Use Case Searches
+equipment for construction safety
+tools for electrical measurement
+materials for pipe installation
+gear for worker protection
+chemicals for maintenance
+

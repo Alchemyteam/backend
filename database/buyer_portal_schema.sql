@@ -377,3 +377,100 @@ ALTER TABLE `sales_data`
 USE ecoschema;
 DESCRIBE sales_data;
 SHOW COLUMNS FROM sales_data IN ecoschema;
+ALTER TABLE sales_data
+    ADD COLUMN product_fingerprint VARCHAR(255) NULL,
+    ADD COLUMN product_uid CHAR(16) NULL;
+
+CREATE INDEX idx_sales_pf ON sales_data(product_fingerprint);
+CREATE INDEX idx_sales_puid ON sales_data(product_uid);
+
+UPDATE sales_data
+SET product_fingerprint =
+        CONCAT(
+                UPPER(TRIM(COALESCE(`ItemCode`,''))), '|',
+                UPPER(TRIM(COALESCE(`ItemName`,''))), '|',
+                UPPER(TRIM(COALESCE(`Product Hierarchy 3`,''))), '|',
+                UPPER(TRIM(COALESCE(`Function`,''))), '|',
+                UPPER(TRIM(COALESCE(`ItemType`,''))), '|',
+                UPPER(TRIM(COALESCE(`Model`,''))), '|',
+                UPPER(TRIM(COALESCE(`Performance`,''))), '|',
+                UPPER(TRIM(COALESCE(`Performance.1`,''))), '|',
+                UPPER(TRIM(COALESCE(`Material`,''))), '|',
+                UPPER(TRIM(COALESCE(`UOM`,''))), '|',
+                UPPER(TRIM(COALESCE(`Brand Code`,''))), '|'
+        )
+WHERE product_fingerprint IS NULL OR product_fingerprint = '';
+
+UPDATE sales_data s
+    JOIN product_master p
+    ON s.product_fingerprint = p.`product_fingerprint`
+SET s.product_uid = p.product_uid
+WHERE s.product_uid IS NULL;
+SELECT COUNT(*) AS not_filled
+FROM sales_data
+WHERE product_uid IS NULL;
+SELECT
+    (SELECT COUNT(*) FROM sales_data) AS order_lines,
+    (SELECT COUNT(*) FROM product_master) AS products;
+
+SELECT product_uid, COUNT(*) AS cnt
+FROM sales_data
+WHERE product_uid IS NOT NULL AND product_uid <> ''
+GROUP BY product_uid
+ORDER BY cnt DESC
+LIMIT 10;
+CREATE TABLE IF NOT EXISTS product_last_purchase (
+                                                     product_uid CHAR(16) NOT NULL,
+                                                     last_tx_date DATE NULL,
+                                                     last_tx_no VARCHAR(64) NULL,
+                                                     last_qty DECIMAL(18,4) NULL,
+                                                     last_price DECIMAL(18,4) NULL,
+                                                     last_cost DECIMAL(18,4) NULL,
+                                                     last_buyer_code VARCHAR(64) NULL,
+                                                     last_buyer_name VARCHAR(255) NULL,
+                                                     source_id BIGINT NULL,
+                                                     PRIMARY KEY (product_uid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+REPLACE INTO product_last_purchase
+(product_uid, last_tx_date, last_tx_no, last_qty, last_price, last_cost, last_buyer_code, last_buyer_name, source_id)
+SELECT
+    s.product_uid,
+    s.`TXDate`,
+    s.`TXNo`,
+    s.`TXQty`,
+    s.`TXP1`,
+    s.`Unit Cost`,
+    s.`BuyerCode`,
+    s.`BuyerName`,
+    s.`id`
+FROM sales_data s
+         JOIN (
+    SELECT product_uid, MAX(`TXDate`) AS max_date
+    FROM sales_data
+    WHERE product_uid IS NOT NULL AND product_uid <> ''
+    GROUP BY product_uid
+) t
+              ON s.product_uid = t.product_uid AND s.`TXDate` = t.max_date
+         JOIN (
+    SELECT product_uid, `TXDate`, MAX(`id`) AS max_id
+    FROM sales_data
+    WHERE product_uid IS NOT NULL AND product_uid <> ''
+    GROUP BY product_uid, `TXDate`
+) u
+              ON s.product_uid = u.product_uid AND s.`TXDate` = u.`TXDate` AND s.`id` = u.max_id;
+SELECT *
+FROM product_last_purchase
+ORDER BY last_tx_date DESC
+LIMIT 20;
+ALTER TABLE product_master
+    ADD COLUMN qdrant_point_id CHAR(36) NULL;
+
+UPDATE product_master
+SET qdrant_point_id = UUID()
+WHERE qdrant_point_id IS NULL OR qdrant_point_id = '';
+ALTER TABLE product_master
+    ADD COLUMN embedding_text TEXT NULL,
+    ADD COLUMN embedding_hash CHAR(64) NULL;
+
+CREATE INDEX idx_pm_embedding_hash ON product_master(embedding_hash);
+DESC product_master;
