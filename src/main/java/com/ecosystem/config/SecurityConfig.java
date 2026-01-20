@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/chat/health").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/admin/embedding/**").permitAll()  // 允许 embedding 端点（开发环境，生产环境应改为 authenticated）
+                        .requestMatchers("/punchout/**").permitAll()  // 允许 punchout 端点（内部有会话token验证）
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))

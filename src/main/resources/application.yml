@@ -59,7 +59,7 @@ cors:
 llm:
   api:
     url: https://generativelanguage.googleapis.com/v1beta  # Google Gemini API 基础地址
-    key: AIzaSyAP0HYbraGzItHM6nbLx7ScF81Y4rpycIA  # Google AI Studio API Key
+    key: AIzaSyB2tAsOkUFmlmKvxi4YrhnmpOtVQI17YFY  # Google AI Studio API Key
   model: gemini-2.5-flash  # 使用的模型：gemini-1.5-flash (推荐), gemini-1.5-pro, gemini-pro (已弃用)
 
 # Cohere Embedding 配置
@@ -77,4 +77,20 @@ qdrant:
   collection: sales_data_vectors  # 集合名称
   vector-size: 1024  # 向量维度（Cohere embed-english-v3.0 默认是 1024 维）
   enabled: true  # 是否启用 Qdrant（设为 false 可暂时禁用）
+
+# Punchout 配置
+punchout:
+  frontend-url: http://localhost:3000  # 前端购物网站URL，用于生成重定向URL
+  # 允许的发送者配置（格式：identity1:secret1,identity2:secret2）
+  # 示例：allowed-senders: AIR_LIQUIDE:s3cr3tk3y!,COUPA:another-secret
+  allowed-senders: AIR_LIQUIDE:s3cr3tk3y!
+  # 供应商身份信息（用于构建PunchOutOrderMessage）
+  supplier-identity: Allinton123  # 供应商标识
+  supplier-domain: allinton.com.sg  # 供应商域名
+  # 允许的returnUrl hosts（SSRF防护，格式：host1,host2,host3）
+  # 示例：allowed-return-hosts: airliquideasia-test.coupahost.com,airliquide.coupahost.com
+  allowed-return-hosts: airliquideasia-test.coupahost.com,airliquide.coupahost.com
+  # 测试模式：如果为 true，HTTP 200 但响应体为空时也视为成功（用于测试环境）
+  # 生产环境应设置为 false
+  test-mode-allow-empty-response: true
 

@@ -19,8 +19,24 @@ public class GlobalExceptionHandler {
         Map<String, String[]> errors = new HashMap<>();
         
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
+            String fieldName;
             String errorMessage = error.getDefaultMessage();
+            
+            // 处理嵌套字段错误（如 items[0].productId）
+            if (error instanceof FieldError) {
+                FieldError fieldError = (FieldError) error;
+                fieldName = fieldError.getField();
+                
+                // 如果是嵌套字段，保留完整路径（如 items[0].productId）
+                if (fieldError.getRejectedValue() != null && fieldName.contains("[")) {
+                    // 已经是嵌套路径，直接使用
+                } else if (fieldError.getRejectedValue() != null) {
+                    // 普通字段
+                }
+            } else {
+                // ObjectError（如类级别验证）
+                fieldName = error.getObjectName();
+            }
             
             // 如果字段已存在错误，追加到数组
             if (errors.containsKey(fieldName)) {
