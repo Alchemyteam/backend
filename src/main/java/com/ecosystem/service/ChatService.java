@@ -1,6 +1,8 @@
 package com.ecosystem.service;
 
 import com.ecosystem.dto.chat.*;
+import com.ecosystem.dto.search.ProductCard;
+import com.ecosystem.dto.search.WebSearchResponse;
 import com.ecosystem.entity.Product;
 import com.ecosystem.entity.SalesData;
 import com.ecosystem.entity.ProductMaster;
@@ -12,6 +14,7 @@ import com.ecosystem.service.LLMSearchParser;
 import com.ecosystem.dto.chat.MaterialSearchCriteria;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,9 @@ public class ChatService {
     private final CohereEmbeddingService cohereEmbeddingService;
     private final QdrantService qdrantService;
     private final ProductMasterRepository productMasterRepository;
+    
+    @Autowired(required = false)
+    private WebSearchService webSearchService;
 
     @Value("${llm.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String llmApiUrl;
@@ -93,16 +99,25 @@ public class ChatService {
         log.debug("Analyzing intent for message: {}", lowerMessage);
         
         // 检查是否包含产品相关关键词（扩展关键词列表）
-        boolean hasProductKeyword = lowerMessage.matches(".*\\b(battery|steel|formwork|concrete|product|item|material|safety|shoe|shoes|equipment|filter|chemical|tool|device|meter|clamp|leakage|fluke|aet|air|liquide)\\b.*");
+        boolean hasProductKeyword = lowerMessage.matches(".*\\b(battery|steel|formwork|concrete|product|item|material|safety|shoe|shoes|equipment|filter|chemical|tool|device|meter|clamp|leakage|fluke|aet|air|liquide|hat|helmet|gloves|mask|goggles|vest|boots)\\b.*");
+        
+        // 检查是否有购买/需要意图
+        boolean hasBuyIntent = lowerMessage.contains("buy") || lowerMessage.contains("purchase") || 
+                               lowerMessage.contains("want") || lowerMessage.contains("need") ||
+                               lowerMessage.contains("looking for") || lowerMessage.contains("get me") ||
+                               lowerMessage.contains("i want") || lowerMessage.contains("i need") ||
+                               lowerMessage.contains("我要") || lowerMessage.contains("我想买") ||
+                               lowerMessage.contains("需要") || lowerMessage.contains("购买");
         
         if ((lowerMessage.contains("create") || lowerMessage.contains("make")) && 
-            (lowerMessage.contains("requisition") || lowerMessage.contains("purchase") || lowerMessage.contains("order"))) {
+            (lowerMessage.contains("requisition") || lowerMessage.contains("order"))) {
             log.debug("Intent: CREATE_REQUISITION");
             return "CREATE_REQUISITION";
         } else if (lowerMessage.contains("search") || lowerMessage.contains("find") || 
                    lowerMessage.contains("show") || lowerMessage.contains("list") ||
                    lowerMessage.contains("查找") || lowerMessage.contains("搜索") ||
-                   lowerMessage.contains("显示") || lowerMessage.contains("列出")) {
+                   lowerMessage.contains("显示") || lowerMessage.contains("列出") ||
+                   hasBuyIntent) {  // 购买意图也触发搜索
             log.debug("Intent: SEARCH_PRODUCTS");
             return "SEARCH_PRODUCTS";
         } else if (lowerMessage.contains("info") || lowerMessage.contains("detail") || 
@@ -121,11 +136,10 @@ public class ChatService {
         
         // 如果查询看起来像是一个产品名称或关键词，也尝试搜索
         // 例如 "Safety Shoes" 应该被识别为搜索
-        if (message.trim().split("\\s+").length <= 5 && 
-            !lowerMessage.contains("?") && 
+        if (message.trim().split("\\s+").length <= 8 && 
             !lowerMessage.contains("how") && 
-            !lowerMessage.contains("what") && 
-            !lowerMessage.contains("why")) {
+            !lowerMessage.contains("why") &&
+            !lowerMessage.contains("when")) {
             log.debug("Intent: SEARCH_PRODUCTS (inferred from short query)");
             return "SEARCH_PRODUCTS";
         }
@@ -259,10 +273,29 @@ public class ChatService {
                 log.info("Converted {} vector search results to SalesData format", salesDataList.size());
             }
             
-            // 如果传统搜索和向量搜索都无结果，让大模型思考一下，提供建议或解释
+            // 如果传统搜索和向量搜索都无结果，尝试 Web 搜索
             if (salesDataList.isEmpty() && vectorSearchResults.isEmpty()) {
-                log.info("Both traditional and vector search failed, asking LLM to think about why and provide suggestions");
+                log.info("Both traditional and vector search failed, trying Web search as fallback");
                 
+                // 尝试 Web 搜索
+                if (webSearchService != null && webSearchService.isWebSearchAvailable()) {
+                    log.info("🌐 Initiating Web search for: {}", message);
+                    WebSearchResponse webResponse = webSearchService.searchWeb(message, 10);
+                    
+                    if (webResponse.getResults() != null && !webResponse.getResults().isEmpty()) {
+                        log.info("✅ Web search found {} results", webResponse.getResults().size());
+                        
+                        // 将 Web 搜索结果转换为聊天响应
+                        return buildWebSearchChatResponse(message, webResponse);
+                    } else {
+                        log.info("📭 Web search also returned no results");
+                    }
+                } else {
+                    log.warn("⚠️ Web search service not available");
+                }
+                
+                // 如果 Web 搜索也没有结果，让大模型提供建议
+                log.info("All search methods failed, asking LLM for suggestions");
                 String llmSuggestion = askLLMForSearchSuggestion(message, criteria, llmCriteria);
                 
                 ChatResponse response = new ChatResponse();
@@ -271,14 +304,14 @@ public class ChatService {
                 if (llmSuggestion != null && !llmSuggestion.trim().isEmpty()) {
                     response.setResponse(llmSuggestion);
                 } else {
-                    response.setResponse("Still can't find what you're looking for? Jump to chatbox");
+                    response.setResponse("I couldn't find any matching products in our database or on the web. Please try different keywords or check the spelling.");
                 }
                 
                 TableData tableData = new TableData();
-                tableData.setTitle("Material Search Results");
+                tableData.setTitle("Search Results");
                 tableData.setHeaders(Arrays.asList("id", "Item Code", "Item Name", "Price", "Date", "Category", "Brand", "Function"));
                 tableData.setRows(Collections.emptyList());
-                tableData.setDescription("Still can't find what you're looking for? Jump to chatbox");
+                tableData.setDescription("No results found. Try different search terms.");
                 response.setTableData(tableData);
                 
                 return response;
@@ -810,6 +843,84 @@ public class ChatService {
 
     private ChatResponse createErrorResponse(String message) {
         return createTextResponse(message);
+    }
+    
+    /**
+     * 将 Web 搜索结果转换为 ChatResponse
+     */
+    private ChatResponse buildWebSearchChatResponse(String originalQuery, WebSearchResponse webResponse) {
+        ChatResponse response = new ChatResponse();
+        
+        List<ProductCard> results = webResponse.getResults();
+        int resultCount = results.size();
+        
+        // 构建回复消息
+        StringBuilder responseText = new StringBuilder();
+        responseText.append("I couldn't find this in our internal database, but I found ")
+                   .append(resultCount)
+                   .append(" result(s) from web search:\n\n");
+        
+        // 添加前3个结果的简要说明
+        int previewCount = Math.min(3, resultCount);
+        for (int i = 0; i < previewCount; i++) {
+            ProductCard card = results.get(i);
+            responseText.append("• **").append(card.getName()).append("**");
+            if (card.getPrice() != null) {
+                responseText.append(" - ").append(card.getCurrency() != null ? card.getCurrency() : "SGD")
+                           .append(" ").append(card.getPrice());
+            }
+            if (card.getVendor() != null) {
+                responseText.append(" (").append(card.getVendor()).append(")");
+            }
+            responseText.append("\n");
+        }
+        
+        if (resultCount > previewCount) {
+            responseText.append("\n...and ").append(resultCount - previewCount).append(" more results.");
+        }
+        
+        response.setResponse(responseText.toString());
+        
+        // 构建表格数据
+        TableData tableData = new TableData();
+        tableData.setTitle("Web Search Results for: " + originalQuery);
+        tableData.setHeaders(Arrays.asList(
+            "Name", "Price", "Currency", "Vendor", "Platform", "URL", "Confidence"
+        ));
+        
+        List<Map<String, Object>> rows = results.stream()
+            .map(card -> {
+                Map<String, Object> row = new HashMap<>();
+                row.put("Name", card.getName() != null ? card.getName() : "N/A");
+                row.put("Price", card.getPrice() != null ? card.getPrice().toString() : "N/A");
+                row.put("Currency", card.getCurrency() != null ? card.getCurrency() : "N/A");
+                row.put("Vendor", card.getVendor() != null ? card.getVendor() : "N/A");
+                row.put("Platform", card.getPlatform() != null ? card.getPlatform() : "web");
+                row.put("URL", card.getUrl() != null ? card.getUrl() : "N/A");
+                row.put("Confidence", card.getConfidence() != null ? 
+                        String.format("%.0f%%", card.getConfidence() * 100) : "N/A");
+                return row;
+            })
+            .collect(Collectors.toList());
+        
+        tableData.setRows(rows);
+        tableData.setDescription("Results from web search (Source: " + webResponse.getSearchEngine() + 
+                                ", Search time: " + webResponse.getSearchTimeMs() + "ms)");
+        response.setTableData(tableData);
+        
+        // 设置 ActionData 表示这是 Web 搜索结果
+        ActionData actionData = new ActionData();
+        actionData.setActionType("WEB_SEARCH_RESULTS");
+        actionData.setParameters(Map.of(
+            "query", originalQuery,
+            "source", webResponse.getSource().toString(),
+            "resultCount", resultCount,
+            "enhanced", webResponse.getEnhancementApplied() != null ? webResponse.getEnhancementApplied() : false
+        ));
+        actionData.setMessage("Web search results for: " + originalQuery);
+        response.setActionData(actionData);
+        
+        return response;
     }
 
     private Map<String, Object> createInfoRow(String field, Object value) {

@@ -42,6 +42,9 @@ public class PunchoutService {
     @Value("${punchout.allowed-return-hosts:}")
     private String allowedReturnHostsConfig;
     
+    @Value("${punchout.session-expiration-seconds:7200}")
+    private long sessionExpirationSeconds;  // 默认 2 小时
+    
     // 允许的returnUrl host列表（SSRF防护）
     private final Set<String> allowedReturnHosts = new HashSet<>();
     
@@ -163,8 +166,8 @@ public class PunchoutService {
         // 生成会话token
         String sessionToken = UUID.randomUUID().toString();
         
-        // 创建会话（30分钟过期）
-        Instant expiresAt = Instant.now().plusSeconds(1800);  // 30分钟 = 1800秒
+        // 创建会话（使用配置的过期时间）
+        Instant expiresAt = Instant.now().plusSeconds(sessionExpirationSeconds);
         // 注意：SetupRequest的From是Buyer，To是Supplier
         // 我们存储Buyer信息（从From读取），Supplier信息从配置读取
         PunchoutSession session = new PunchoutSession(
@@ -415,8 +418,8 @@ public class PunchoutService {
         // 生成会话token
         String sessionToken = UUID.randomUUID().toString();
         
-        // 创建会话（30分钟过期）
-        Instant expiresAt = Instant.now().plusSeconds(1800);  // 30分钟 = 1800秒
+        // 创建会话（使用配置的过期时间）
+        Instant expiresAt = Instant.now().plusSeconds(sessionExpirationSeconds);
         // 注意：JSON格式的setup请求没有完整的cXML Header信息
         // 如果后续需要Return回传，这些信息是必需的
         // 这里设置为null，在return时会检查并拒绝
@@ -446,7 +449,7 @@ public class PunchoutService {
         return new PunchoutSetupResponse(
             sessionToken,
             redirectUrl,
-            1800L // 30分钟 = 1800秒
+            sessionExpirationSeconds  // 使用配置的过期时间
         );
     }
 

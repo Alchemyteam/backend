@@ -16,7 +16,7 @@ spring:
   
   # 数据库配置 (MySQL)
   datasource:
-    url: jdbc:mysql://localhost:3306/ecoschema?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true
+    url: jdbc:mysql://localhost:3306/ecoschema?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root  # 请修改为你的 MySQL 用户名
     password: allinton  # 请修改为你的 MySQL 密码
@@ -78,6 +78,40 @@ qdrant:
   vector-size: 1024  # 向量维度（Cohere embed-english-v3.0 默认是 1024 维）
   enabled: true  # 是否启用 Qdrant（设为 false 可暂时禁用）
 
+# Brave Search API 配置（已停用）
+# brave:
+#   api:
+#     key: BSAWQ6Jfnr5Mzf_0FQrGByEgSmyeVOH
+#     base-url: https://api.search.brave.com/res/v1
+#   search:
+#     default-count: 10
+#     country: MY
+#     locale: en
+#     timeout-ms: 5000
+#     max-retries: 1
+#   enabled: false
+
+# Tavily Search API 配置
+tavily:
+  api:
+    key: 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  # Tavily API Key
+    base-url: https://api.tavily.com  # Tavily API 基础地址
+  search:
+    default-count: 10  # 默认返回结果数
+    country: SG       # 兼容字段（Tavily当前未使用）
+    locale: en         # 兼容字段（Tavily当前未使用）
+    timeout-ms: 5000   # 超时时间（毫秒）
+    max-retries: 1     # 最大重试次数
+    strict-singapore: true   # 仅保留新加坡结果
+    allow-sea-fallback: false # 若新加坡无结果，是否回退东南亚（默认不回退）
+  enabled: true        # 是否启用 Tavily Search
+  enhancement:
+    enabled: true
+    max-concurrent: 3
+    page-timeout-ms: 8000
+    max-content-length: 12000
+    llm-extraction-enabled: true
+
 # Punchout 配置
 punchout:
   frontend-url: http://localhost:3000  # 前端购物网站URL，用于生成重定向URL
@@ -93,4 +127,7 @@ punchout:
   # 测试模式：如果为 true，HTTP 200 但响应体为空时也视为成功（用于测试环境）
   # 生产环境应设置为 false
   test-mode-allow-empty-response: true
+  # 会话过期时间（秒），默认 2 小时（7200秒）
+  # 可以根据实际需求调整，例如：3600（1小时）、7200（2小时）、14400（4小时）
+  session-expiration-seconds: 7200
 

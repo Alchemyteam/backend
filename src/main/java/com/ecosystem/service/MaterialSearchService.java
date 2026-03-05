@@ -1,10 +1,13 @@
 package com.ecosystem.service;
 
 import com.ecosystem.dto.chat.MaterialSearchCriteria;
+import com.ecosystem.dto.search.ProductCard;
+import com.ecosystem.dto.search.WebSearchResponse;
 import com.ecosystem.entity.SalesData;
 import com.ecosystem.repository.SalesDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 /**
  * 物料搜索服务
  * 支持多种搜索方式：物料编码、物料名称、品类、功能、品牌、组合条件
+ * 当内部搜索无结果时，支持 Web 搜索回退
  */
 @Service
 @RequiredArgsConstructor
@@ -25,6 +29,9 @@ import java.util.stream.Collectors;
 public class MaterialSearchService {
 
     private final SalesDataRepository salesDataRepository;
+    
+    @Autowired(required = false)
+    private WebSearchService webSearchService;
 
     /**
      * 执行物料搜索
@@ -370,6 +377,180 @@ public class MaterialSearchService {
         public void setLastTransactionDate(LocalDate lastTransactionDate) { this.lastTransactionDate = lastTransactionDate; }
         public List<SalesData> getHistory() { return history; }
         public void setHistory(List<SalesData> history) { this.history = history; }
+    }
+    
+    // ==================== Web Fallback 搜索功能 ====================
+    
+    /**
+     * 执行搜索并支持 Web 回退
+     * 当内部数据库无结果时，自动使用 Tavily Search 进行网络搜索
+     * @param criteria 搜索条件
+     * @return WebSearchResponse 包含来源类型和搜索结果
+     */
+    public WebSearchResponse searchWithWebFallback(MaterialSearchCriteria criteria) {
+        long startTime = System.currentTimeMillis();
+        log.info("🔍 Starting search with web fallback for: {}", criteria.getRawQuery());
+        
+        // 1. 先执行内部搜索
+        List<SalesData> internalResults = searchMaterials(criteria);
+        long internalSearchTime = System.currentTimeMillis() - startTime;
+        
+        // 2. 将内部结果转换为 ProductCard
+        List<ProductCard> internalCards = convertToProductCards(internalResults);
+        
+        // 3. 如果内部有结果，直接返回
+        if (!internalCards.isEmpty()) {
+            log.info("✅ Internal search returned {} results in {}ms", 
+                    internalCards.size(), internalSearchTime);
+            return WebSearchResponse.internalResult(
+                    criteria.getRawQuery(), 
+                    internalCards, 
+                    internalSearchTime);
+        }
+        
+        // 4. 内部无结果，尝试 Web 搜索
+        if (webSearchService != null && webSearchService.isWebSearchAvailable()) {
+            log.info("📭 No internal results, falling back to web search...");
+            String searchQuery = buildWebSearchQuery(criteria);
+            WebSearchResponse webResponse = webSearchService.searchWeb(searchQuery);
+            
+            // 更新总耗时
+            webResponse.setSearchTimeMs(System.currentTimeMillis() - startTime);
+            return webResponse;
+        }
+        
+        // 5. Web 搜索不可用，返回空结果
+        log.info("⚠️ Web search not available, returning empty results");
+        return WebSearchResponse.internalResult(
+                criteria.getRawQuery(), 
+                new ArrayList<>(), 
+                System.currentTimeMillis() - startTime);
+    }
+    
+    /**
+     * 执行混合搜索（内部 + Web 补充）
+     * 不管内部是否有结果，都会尝试 Web 搜索来补充
+     * @param criteria 搜索条件
+     * @param maxWebResults 最大 Web 结果数
+     * @return WebSearchResponse 混合结果
+     */
+    public WebSearchResponse searchWithWebEnhancement(MaterialSearchCriteria criteria, int maxWebResults) {
+        long startTime = System.currentTimeMillis();
+        log.info("🔍 Starting enhanced search (internal + web) for: {}", criteria.getRawQuery());
+        
+        // 1. 执行内部搜索
+        List<SalesData> internalResults = searchMaterials(criteria);
+        List<ProductCard> internalCards = convertToProductCards(internalResults);
+        
+        // 2. 执行 Web 搜索
+        List<ProductCard> webCards = new ArrayList<>();
+        if (webSearchService != null && webSearchService.isWebSearchAvailable()) {
+            String searchQuery = buildWebSearchQuery(criteria);
+            WebSearchResponse webResponse = webSearchService.searchWeb(searchQuery, maxWebResults);
+            if (webResponse.getResults() != null) {
+                webCards = webResponse.getResults();
+            }
+        }
+        
+        // 3. 合并结果
+        long totalTime = System.currentTimeMillis() - startTime;
+        return webSearchService != null 
+                ? webSearchService.mergeResults(criteria.getRawQuery(), internalCards, webCards, totalTime)
+                : WebSearchResponse.internalResult(criteria.getRawQuery(), internalCards, totalTime);
+    }
+    
+    /**
+     * 将 SalesData 列表转换为 ProductCard 列表
+     */
+    private List<ProductCard> convertToProductCards(List<SalesData> salesDataList) {
+        return salesDataList.stream()
+                .map(this::convertToProductCard)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 将单个 SalesData 转换为 ProductCard
+     */
+    private ProductCard convertToProductCard(SalesData data) {
+        // 解析价格
+        BigDecimal price = null;
+        if (data.getUnitCost() != null && !data.getUnitCost().trim().isEmpty()) {
+            try {
+                price = new BigDecimal(data.getUnitCost().trim());
+            } catch (NumberFormatException e) {
+                // 尝试使用 TXP1
+                if (data.getTxP1() != null && !data.getTxP1().trim().isEmpty()) {
+                    try {
+                        price = new BigDecimal(data.getTxP1().trim());
+                    } catch (NumberFormatException e2) {
+                        log.trace("Failed to parse price for {}", data.getItemCode());
+                    }
+                }
+            }
+        }
+        
+        // 构建描述
+        StringBuilder description = new StringBuilder();
+        if (data.getProductHierarchy3() != null) {
+            description.append(data.getProductHierarchy3());
+        }
+        if (data.getFunction() != null && !data.getFunction().isEmpty()) {
+            if (description.length() > 0) description.append(" | ");
+            description.append(data.getFunction());
+        }
+        
+        return ProductCard.builder()
+                .id(data.getTxNo())
+                .itemCode(data.getItemCode())
+                .name(data.getItemName())
+                .description(description.toString())
+                .price(price)
+                .currency("SGD")  // 默认货币
+                .vendor(data.getBuyerName())  // 使用买家作为供应商（可根据业务调整）
+                .brand(data.getBrandCode())
+                .platform("internal")
+                .category(data.getProductHierarchy3())
+                .availability("unknown")
+                .stock(null)  // SalesData 没有库存信息
+                .confidence(1.0)  // 内部数据置信度最高
+                .relevanceScore(1.0)
+                .enhanced(false)
+                .build();
+    }
+    
+    /**
+     * 根据搜索条件构建 Web 搜索查询字符串
+     */
+    private String buildWebSearchQuery(MaterialSearchCriteria criteria) {
+        StringBuilder query = new StringBuilder();
+        
+        // 优先使用原始查询
+        if (criteria.getRawQuery() != null && !criteria.getRawQuery().trim().isEmpty()) {
+            query.append(criteria.getRawQuery().trim());
+        } else {
+            // 从各字段构建查询
+            if (criteria.hasItemNameKeyword()) {
+                query.append(criteria.getItemNameKeyword());
+            }
+            if (criteria.hasCategory()) {
+                if (query.length() > 0) query.append(" ");
+                query.append(criteria.getProductHierarchy3());
+            }
+            if (criteria.hasBrand()) {
+                if (query.length() > 0) query.append(" ");
+                query.append(criteria.getBrandCode());
+            }
+        }
+        
+        // 添加上下文关键词以提高搜索相关性
+        String queryStr = query.toString();
+        if (!queryStr.toLowerCase().contains("singapore") && 
+            !queryStr.toLowerCase().contains("price") &&
+            !queryStr.toLowerCase().contains("buy")) {
+            query.append(" Singapore buy price");
+        }
+        
+        return query.toString().trim();
     }
 }
 
